@@ -1,0 +1,704 @@
+'use client'
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, Plus, Edit, Trash2, AlertTriangle } from "lucide-react"
+
+export default function LocationManagementPage() {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+
+  const router = useRouter()
+  const [locations, setLocations] = useState<any[]>([])
+  const [groupLocations, setGroupLocations] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isAddGroupDialogOpen, setIsAddGroupDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState<any>(null)
+  const [locationToDelete, setLocationToDelete] = useState<any>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [createFormLoading, setCreateFormLoading] = useState(false)
+  const [createGroupLoading, setCreateGroupLoading] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+
+  const [createForm, setCreateForm] = useState({
+    group_location_id: "",
+    location_name: "",
+    latitude: "",
+    longitude: "",
+  })
+
+  const [createGroupForm, setCreateGroupForm] = useState({
+    group_location_name: "",
+  })
+
+  const [editForm, setEditForm] = useState({
+    group_location_id: "",
+    location_name: "",
+    location_detail: "",
+    latitude: "",
+    longitude: "",
+  })
+
+  useEffect(() => {
+    fetchLocations()
+    fetchGroupLocations()
+  }, [])
+
+  // ✅ ดึงข้อมูลสถานที่ทั้งหมด
+  const fetchLocations = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const response = await fetch(`${API_URL}/location/getAllLocations`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      console.log('Response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+
+      setLocations(Array.isArray(data.locations) ? data.locations : [])
+
+    } catch (error) {
+      console.error('Fetch locations error:', error)
+      setError('ไม่สามารถดึงข้อมูลสถานที่ได้')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // ✅ ดึงข้อมูลกลุ่มสถานที่ทั้งหมด
+  const fetchGroupLocations = async () => {
+    try {
+      const response = await fetch(`${API_URL}/grouplocation/getAllGrouplocations`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+
+      setGroupLocations(Array.isArray(data.groupLocations) ? data.groupLocations : [])
+
+    } catch (error) {
+      console.error('Fetch group locations error:', error)
+    }
+  }
+
+  const filteredLocations = locations.filter(
+    (location) =>
+        location.location_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.latitude?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.longitude?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  // ✅ เปิด Dialog เพิ่มสถานที่
+  const handleOpenCreateDialog = () => {
+    setIsAddDialogOpen(true)
+    setCreateForm({ 
+      group_location_id: "", 
+      location_name: "", 
+      latitude: "", 
+      longitude: "" 
+    })
+  }
+
+  // ✅ เปิด Dialog เพิ่มกลุ่มสถานที่
+  const handleOpenCreateGroupDialog = () => {
+    setIsAddGroupDialogOpen(true)
+    setCreateGroupForm({ group_location_name: "" })
+  }
+
+  // ✅ สร้างกลุ่มสถานที่ใหม่
+  const handleSubmitCreateGroup = async () => {
+    try {
+      setCreateGroupLoading(true)
+
+      const response = await fetch(`${API_URL}/grouplocation/createGrouplocation`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify(createGroupForm)
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'ไม่สามารถสร้างกลุ่มสถานที่ได้')
+      }
+      
+      await fetchGroupLocations()
+      setIsAddGroupDialogOpen(false)
+      setCreateGroupForm({ group_location_name: "" })
+      
+      
+    } catch (error: any) {
+      console.error('Error creating group location:', error)
+      alert(`เกิดข้อผิดพลาด: ${error.message}`)
+    } finally {
+      setCreateGroupLoading(false)
+    }
+  }
+
+  // ✅ สร้างสถานที่ใหม่
+  const handleSubmitCreateLocation = async () => {
+    try {
+      setCreateFormLoading(true)
+
+      console.log('Creating location with data:', createForm)
+
+      const response = await fetch(`${API_URL}/location/createLocation`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify(createForm)
+      })
+      
+      const data = await response.json()
+      console.log('Create response:', data)
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'ไม่สามารถสร้างสถานที่ได้')
+      }
+      
+      await fetchLocations()
+      setIsAddDialogOpen(false)
+      setCreateForm({ 
+        group_location_id: "", 
+        location_name: "", 
+        latitude: "", 
+        longitude: "" 
+      })
+      
+    } catch (error: any) {
+      console.error('Error creating location:', error)
+      alert(`เกิดข้อผิดพลาด: ${error.message}`)
+    } finally {
+      setCreateFormLoading(false)
+    }
+  }
+
+  // ✅ เปิด Dialog แก้ไขสถานที่
+  const handleEditLocation = (location: any) => {
+    setSelectedLocation(location)
+    setEditForm({
+      group_location_id: location.group_location_id || "",
+      location_name: location.location_name || "",
+      location_detail: location.location_detail || "",
+      latitude: location.latitude || "",
+      longitude: location.longitude || "",
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  // ✅ บันทึกการแก้ไขสถานที่
+  const handleSubmitEdit = async () => {
+    if (!selectedLocation) return
+
+    try {
+      setEditLoading(true)
+
+      const response = await fetch(`${API_URL}/location/updateLocation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          location_id: selectedLocation.location_id,
+          group_location_id: editForm.group_location_id,
+          location_name: editForm.location_name,
+          latitude: editForm.latitude,
+          longitude: editForm.longitude,
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'ไม่สามารถแก้ไขข้อมูลได้')
+      }
+
+      // ✅ อัพเดทข้อมูลใน state
+      setLocations(locations.map(location => 
+        location.location_id === selectedLocation.location_id 
+          ? { 
+              ...location, 
+              group_location_id: editForm.group_location_id,
+              location_name: editForm.location_name, 
+              latitude: editForm.latitude,
+              longitude: editForm.longitude,
+            } 
+          : location
+      ))
+
+      setIsEditDialogOpen(false)
+
+    } catch (error: any) {
+      console.error("Error editing location:", error)
+      alert(`เกิดข้อผิดพลาด: ${error.message}`)
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  // ✅ ลบสถานที่
+  const handleDeleteLocation = async () => {
+    if (!locationToDelete) return
+
+    try {
+      setDeleteLoading(true)
+
+      const response = await fetch(`${API_URL}/location/deleteLocation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          location_id: locationToDelete.location_id
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'ไม่สามารถลบสถานที่ได้')
+      }
+
+      setLocations(locations.filter(location => location.location_id !== locationToDelete.location_id))
+      setIsDeleteDialogOpen(false)
+      setLocationToDelete(null)
+
+    } catch (error: any) {
+      console.error("Error deleting location:", error)
+      alert(`เกิดข้อผิดพลาด: ${error.message}`)
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
+
+  const confirmDeleteLocation = (location: any) => {
+    setLocationToDelete(location)
+    setIsDeleteDialogOpen(true)
+  }
+
+  return (
+    <div className="flex-1 space-y-6 p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">จัดการสถานที่</h2>
+          <p className="text-muted-foreground">จัดการรายการสถานที่และกลุ่มสถานที่</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="ค้นหาสถานที่, รายละเอียดสถานที่"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          /> 
+        </div>
+        <Button className="bg-gray-800" onClick={handleOpenCreateDialog}>
+          <Plus className="h-4 w-4 mr-2" />
+          เพิ่มสถานที่
+        </Button>
+        <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleOpenCreateGroupDialog}>
+          <Plus className="h-4 w-4 mr-2" />
+          เพิ่มกลุ่มสถานที่
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>รายการสถานที่ในระบบ</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 mr-3" />
+                <div>
+                  <h3 className="text-sm font-medium text-red-800">เกิดข้อผิดพลาด</h3>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                  <button
+                    onClick={fetchLocations}
+                    className="mt-2 text-sm text-red-800 underline hover:text-red-900"
+                  >
+                    ลองอีกครั้ง
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-gray-800 mx-auto mb-4"></div>
+              <p className="text-gray-500">กำลังโหลดข้อมูล...</p>
+            </div>
+          ) : filteredLocations.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <Search className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">ไม่พบสถานที่</h3>
+              <p className="text-gray-500 mb-4">
+                {searchTerm
+                  ? "ไม่พบสถานที่ในระบบที่ตรงกับการค้นหา"
+                  : "ยังไม่มีสถานที่ในระบบ กรุณาเพิ่มสถานที่หรือเชื่อมต่อฐานข้อมูล"}
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ชื่อสถานที่</TableHead>
+                  <TableHead>กลุ่มสถานที่</TableHead>
+                  <TableHead>ละติจูด</TableHead>
+                  <TableHead>ลองจิจูด</TableHead>
+                  <TableHead className="text-right">การจัดการ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLocations.map((location) => (
+                  <TableRow key={location.location_id}>
+                    <TableCell>{location.location_name || "-"}</TableCell>
+                    <TableCell className="font-medium">
+                      {location.Group_Location?.group_location_name || "-"}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {location.latitude || "-"}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {location.longitude || "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditLocation(location)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => confirmDeleteLocation(location)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delete Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบสถานที่</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการลบสถานที่{" "}
+              <span className="font-semibold text-gray-900">
+                {locationToDelete?.location_name}
+              </span>
+              {" "}ใช่หรือไม่?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setLocationToDelete(null)
+              }}
+              disabled={deleteLoading}
+            >
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteLocation}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>กำลังลบ...</span>
+                </div>
+              ) : (
+                'ลบสถานที่'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Create Group Location Dialog */}
+      <Dialog open={isAddGroupDialogOpen} onOpenChange={setIsAddGroupDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>เพิ่มกลุ่มสถานที่</DialogTitle>
+            <DialogDescription>
+              เพิ่มกลุ่มสถานที่ใหม่ในระบบ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div>
+              <Label htmlFor="create_group_name">ชื่อกลุ่มสถานที่ *</Label>
+              <Input
+                id="create_group_name"
+                value={createGroupForm.group_location_name}
+                onChange={(e) => setCreateGroupForm({group_location_name: e.target.value})}
+                placeholder="เช่น อาคาร A"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsAddGroupDialogOpen(false)
+                setCreateGroupForm({ group_location_name: "" })
+              }}
+              disabled={createGroupLoading}
+            >
+              ยกเลิก
+            </Button>
+            <Button 
+              onClick={handleSubmitCreateGroup}
+              disabled={createGroupLoading || !createGroupForm.group_location_name}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {createGroupLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>กำลังบันทึก...</span>
+                </div>
+              ) : (
+                'บันทึกข้อมูล'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Location Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>เพิ่มสถานที่</DialogTitle>
+            <DialogDescription>
+              เพิ่มข้อมูลของสถานที่ใหม่ในระบบ
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="create_group_location_id">กลุ่มสถานที่ *</Label>
+                <Select
+                  value={createForm.group_location_id}
+                  onValueChange={(value) => setCreateForm({...createForm, group_location_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกกลุ่มสถานที่" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groupLocations.map((group) => (
+                      <SelectItem key={group.group_location_id} value={group.group_location_id}>
+                        {group.group_location_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="create_location_name">ชื่อสถานที่ *</Label>
+                <Input
+                  id="create_location_name"
+                  value={createForm.location_name}
+                  onChange={(e) => setCreateForm({...createForm, location_name: e.target.value})}
+                  placeholder="เช่น หน่วยงานเภสัชกรรม"
+                />
+              </div>
+              <div>
+                <Label htmlFor="create_latitude">ละติจูด</Label>
+                <Input
+                  id="create_latitude"
+                  value={createForm.latitude}
+                  onChange={(e) => setCreateForm({...createForm, latitude: e.target.value})}
+                  placeholder="เช่น 16.4419"
+                />
+              </div>
+              <div>
+                <Label htmlFor="create_longitude">ลองจิจูด</Label>
+                <Input
+                  id="create_longitude"
+                  value={createForm.longitude}
+                  onChange={(e) => setCreateForm({...createForm, longitude: e.target.value})}
+                  placeholder="เช่น 102.8360"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsAddDialogOpen(false)
+                setCreateForm({ 
+                  group_location_id: "", 
+                  location_name: "",
+                  latitude: "", 
+                  longitude: "" 
+                })
+              }}
+              disabled={createFormLoading}
+            >
+              ยกเลิก
+            </Button>
+            <Button 
+              onClick={handleSubmitCreateLocation}
+              disabled={createFormLoading || !createForm.group_location_id || !createForm.location_name}
+              className="bg-gray-800"
+            >
+              {createFormLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>กำลังบันทึก...</span>
+                </div>
+              ) : (
+                'บันทึกข้อมูล'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Location Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>แก้ไขสถานที่</DialogTitle>
+            <DialogDescription>
+              แก้ไขข้อมูลของสถานที่ {selectedLocation?.location_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="edit_group_location_id">กลุ่มสถานที่ *</Label>
+                <Select
+                  value={editForm.group_location_id}
+                  onValueChange={(value) => setEditForm({...editForm, group_location_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="เลือกกลุ่มสถานที่" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groupLocations.map((group) => (
+                      <SelectItem key={group.group_location_id} value={group.group_location_id}>
+                        {group.group_location_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="edit_location_name">ชื่อสถานที่ *</Label>
+                <Input
+                  id="edit_location_name"
+                  value={editForm.location_name}
+                  onChange={(e) => setEditForm({...editForm, location_name: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_latitude">ละติจูด</Label>
+                <Input
+                  id="edit_latitude"
+                  value={editForm.latitude}
+                  onChange={(e) => setEditForm({...editForm, latitude: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_longitude">ลองจิจูด</Label>
+                <Input
+                  id="edit_longitude"
+                  value={editForm.longitude}
+                  onChange={(e) => setEditForm({...editForm, longitude: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={editLoading}
+            >
+              ยกเลิก
+            </Button>
+            <Button 
+              onClick={handleSubmitEdit}
+              disabled={editLoading || !editForm.location_name || !editForm.group_location_id}
+            >
+              {editLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>กำลังบันทึก...</span>
+                </div>
+              ) : (
+                'บันทึกการแก้ไข'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

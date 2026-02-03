@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Camera {
+  camera_id  Int        @id @default(autoincrement())
+  slot_id    Int
+  created_at DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at DateTime?  @db.Timestamp(6)
+  deleted_at DateTime?  @db.Timestamp(6)
+  Slot       Slot       @relation(fields: [slot_id], references: [slot_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_camera_slot")
+  Snapshot   Snapshot[]
+}
+
+model Group_Location {
+  group_location_id   Int        @id @default(autoincrement())
+  group_location_name String     @db.VarChar(45)
+  created_at          DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?  @db.Timestamp(6)
+  deleted_at          DateTime?  @db.Timestamp(6)
+  Location            Location[]
+  User                User[]
+}
+
+model Location {
+  location_id       Int                 @id @default(autoincrement())
+  group_location_id Int
+  location_name     String?             @db.VarChar(45)
+  latitude          String?             @db.VarChar(100)
+  longitude         String?             @db.VarChar(100)
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?           @db.Timestamp(6)
+  deleted_at        DateTime?           @db.Timestamp(6)
+  Group_Location    Group_Location      @relation(fields: [group_location_id], references: [group_location_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_location_group")
+  Locker            Locker[]
+  Slot              Slot[]
+  User              User[]
+  User_locker_grant User_locker_grant[]
+}
+
+model Locker {
+  locker_id              Int                 @id @default(autoincrement())
+  location_id            Int
+  locker_location_detail String?             @db.VarChar(100)
+  locker_status          Boolean             @default(false)
+  api_token              String?             
+  created_at             DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?           @db.Timestamp(6)
+  deleted_at             DateTime?           @db.Timestamp(6)
+  Location               Location            @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_locker_location")
+  Slot                   Slot[]
+  User_locker_grant      User_locker_grant[]
+  Locker_Provision       Locker_Provision?
+}
+
+model Product {
+  product_id         String               @id @db.VarChar(45)
+  product_name       String?              @db.VarChar(45)
+  product_detail     String?              @db.VarChar(255)
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @db.Timestamp(6)
+  deleted_at         DateTime?            @db.Timestamp(6)
+  Slot_stock         Slot_stock[]
+  Transaction_detail Transaction_detail[]
+}
+
+model Role {
+  role_id    Int       @id @default(autoincrement())
+  role_name  String    @db.VarChar(45)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @db.Timestamp(6)
+  deleted_at DateTime? @db.Timestamp(6)
+  User       User[]
+}
+
+model Slot {
+  slot_id            Int                  @id @default(autoincrement())
+  locker_id          Int
+  location_id        Int
+  slot_status        String?              @db.VarChar(45)
+  capacity           Int?
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @db.Timestamp(6)
+  deleted_at         DateTime?            @db.Timestamp(6)
+  Camera             Camera[]
+  Location           Location             @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_slot_location")
+  Locker             Locker               @relation(fields: [locker_id], references: [locker_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_slot_locker")
+  Slot_stock         Slot_stock[]
+  Transaction_detail Transaction_detail[]
+}
+
+model Slot_stock {
+  slot_stock_id      Int                  @id @default(autoincrement())
+  lot_id             String               @db.VarChar(45)
+  product_id         String               @db.VarChar(45)
+  slot_id            Int
+  amount             Int?
+  expired_at         DateTime?            @db.Date
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @db.Timestamp(6)
+  deleted_at         DateTime?            @db.Timestamp(6)
+  Product            Product              @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_stock_product")
+  Slot               Slot                 @relation(fields: [slot_id], references: [slot_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_stock_slot")
+  Snapshot           Snapshot[]
+  Transaction_detail Transaction_detail[]
+}
+
+model Snapshot {
+  snapshot_id           Int                @id @default(autoincrement())
+  image_path            String?            @db.VarChar(255)
+  transaction_id        Int
+  transaction_detail_id Int
+  slot_stock_id         Int
+  camera_id             Int
+  created_at            DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?          @db.Timestamp(6)
+  deleted_at            DateTime?          @db.Timestamp(6)
+  Camera                Camera             @relation(fields: [camera_id], references: [camera_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_snapshot_camera")
+  Transaction_detail    Transaction_detail @relation(fields: [transaction_detail_id], references: [transaction_detail_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_snapshot_detail")
+  Slot_stock            Slot_stock         @relation(fields: [slot_stock_id], references: [slot_stock_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_snapshot_stock")
+  Transaction           Transaction        @relation(fields: [transaction_id], references: [transaction_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_snapshot_transaction")
+}
+
+model Transaction {
+  transaction_id     Int                  @id @default(autoincrement())
+  user_id            String               @db.Uuid
+  activity           String?              @db.VarChar(45)
+  status             String?              @db.VarChar(45)
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @db.Timestamp(6)
+  deleted_at         DateTime?            @db.Timestamp(6)
+  Snapshot           Snapshot[]
+  User               User                 @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_transaction_user")
+  Transaction_detail Transaction_detail[]
+}
+
+model Transaction_detail {
+  transaction_detail_id Int         @id @default(autoincrement())
+  transaction_id        Int
+  product_id            String      @db.VarChar(45)
+  slot_stock_id         Int
+  slot_id               Int
+  amount                Int?
+  created_at            DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?   @db.Timestamp(6)
+  deleted_at            DateTime?   @db.Timestamp(6)
+  Snapshot              Snapshot[]
+  Product               Product     @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detail_product")
+  Slot                  Slot        @relation(fields: [slot_id], references: [slot_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detail_slot")
+  Slot_stock            Slot_stock  @relation(fields: [slot_stock_id], references: [slot_stock_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detail_stock")
+  Transaction           Transaction @relation(fields: [transaction_id], references: [transaction_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_detail_transaction")
+}
+
+model User {
+  user_id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  location_id       Int?
+  group_location_id Int?
+  citizen_id        String?
+  card_uid          String?
+  fingerprint       String?
+  first_name        String?             @db.VarChar(100)
+  last_name         String?             @db.VarChar(100)
+  date_of_birth     DateTime?           @db.Date
+  religion          String?             @db.VarChar(45)
+  gender            String?             @db.VarChar(45)
+  email             String?             @db.VarChar(100)
+  password          String?
+  phone_number      String?             @db.VarChar(45)
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?           @db.Timestamp(6)
+  deleted_at        DateTime?           @db.Timestamp(6)
+  role_id           Int
+  Transaction       Transaction[]
+  Group_Location    Group_Location?     @relation(fields: [group_location_id], references: [group_location_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_group_location")
+  Location          Location?           @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_location")
+  Role              Role                @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_user_role")
+  User_locker_grant User_locker_grant[]
+}
+
+model User_locker_grant {
+  user_locker_grant_id Int       @id @default(autoincrement())
+  user_id              String    @db.Uuid
+  granted_by           String?   @db.VarChar(100)
+  permission_withdraw  Int?
+  permission_restock   Int?
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+  updated_at           DateTime? @db.Timestamp(6)
+  deleted_at           DateTime? @db.Timestamp(6)
+  locker_id            Int
+  location_id          Int
+  Location             Location  @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grant_location")
+  Locker               Locker    @relation(fields: [locker_id], references: [locker_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grant_locker")
+  User                 User      @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_grant_user")
+}
+
+model Locker_Provision {
+  provision_id   Int       @id @default(autoincrement())
+  locker_id      Int       @unique
+  provision_code String    @unique @db.VarChar(6)
+  is_activated   Boolean   @default(false)
+  expires_at     DateTime? @db.Timestamp(6)
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @db.Timestamp(6)
+  deleted_at     DateTime? @db.Timestamp(6)
+
+  Locker Locker @relation(fields: [locker_id], references: [locker_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_provision_locker")
+}
