@@ -364,7 +364,7 @@ export default function Register() {
                 {/* Citizen ID */}
                 <div className="space-y-2">
                   <Label htmlFor="citizen_id" className="text-sm font-medium">
-                    เลขบัตรประชาชน
+                    เลขบัตรประชาชน <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="citizen_id"
@@ -378,21 +378,6 @@ export default function Register() {
                   />
                 </div>
 
-                {/* Card UID */}
-                <div className="space-y-2">
-                  <Label htmlFor="card_uid" className="text-sm font-medium">
-                    รหัสบัตร (Card UID)
-                  </Label>
-                  <Input
-                    id="card_uid"
-                    type="text"
-                    placeholder="กรอกรหัสบัตร"
-                    value={card_uid}
-                    onChange={(e) => setCardUid(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    disabled={loading}
-                  />
-                </div>
 
                 {/* Date of Birth */}
                 <div className="space-y-2">

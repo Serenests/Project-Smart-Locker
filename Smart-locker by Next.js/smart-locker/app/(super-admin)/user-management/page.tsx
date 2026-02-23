@@ -704,8 +704,8 @@ export default function UsersPage() {
             </div>
             {/* ✅ แสดงปุ่มเพิ่มเฉพาะ role ที่มีสิทธิ์ */}
             {canCreateGrant() && (
-              <Button onClick={handleCreateGrant}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateGrant}>
+                <Plus className="h-4 w-4 mr-2 " />
                 เพิ่มการให้สิทธิ์
               </Button>
             )}

@@ -8,43 +8,51 @@ require('dotenv').config();
 
 const prisma = require('../lib/prisma');
 
-// ฟังก์ชันเข้ารหัส citizen_id แบบ Deterministic (ได้ผลลัพธ์เหมือนกันเสมอ)
-const encryptCitizenId = (citizenId) => {
-    if (!citizenId) return null;
-    
-    const algorithm = 'aes-256-cbc';
-    const key = crypto.scryptSync(process.env.ENCRYPTION_KEY, 'salt', 32);
-    
-    // ใช้ IV คงที่ (derived from citizen_id) เพื่อให้ได้ผลลัพธ์เดียวกันเสมอ
-    const iv = crypto.createHash('md5').update(citizenId + process.env.ENCRYPTION_KEY).digest();
-    
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(citizenId, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    return encrypted;
+const hashCitizenId = (citizenId) => {
+  if (!citizenId) return null;
+  // ใช้ SHA256 เพื่อสร้าง Fingerprint ที่คงที่สำหรับค้นหา (ย้อนกลับไม่ได้)
+  return crypto
+    .createHmac("sha256", process.env.ENCRYPTION_KEY)
+    .update(citizenId)
+    .digest("hex");
 };
 
-// ฟังก์ชันถอดรหัส citizen_id
-const decryptCitizenId = (encryptedCitizenId, originalPlainText) => {
-    try {
-        if (!encryptedCitizenId) return null;
-        
-        const algorithm = 'aes-256-cbc';
-        const key = crypto.scryptSync(process.env.ENCRYPTION_KEY, 'salt', 32);
-        
-        // ต้องมี original plaintext เพื่อสร้าง IV เดียวกัน
-        const iv = crypto.createHash('md5').update(originalPlainText + process.env.ENCRYPTION_KEY).digest();
-        
-        const decipher = crypto.createDecipheriv(algorithm, key, iv);
-        let decrypted = decipher.update(encryptedCitizenId, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
-        
-        return decrypted;
-    } catch (error) {
-        console.error('Decryption error:', error);
-        return null;
-    }
+const encryptCitizenId = (citizenId, userId) => {
+  if (!citizenId || !userId) return null;
+  const algorithm = "aes-256-cbc";
+  const key = crypto.scryptSync(process.env.ENCRYPTION_KEY, "salt", 32);
+
+  // ใช้ userId แทนเพื่อให้ตอนถอดรหัส เรามี "กุญแจ" ในการสร้าง IV เดิมกลับมา
+  const iv = crypto
+    .createHash("md5")
+    .update(userId + process.env.ENCRYPTION_KEY)
+    .digest();
+
+  const cipher = crypto.createCipheriv(algorithm, key, iv);
+  let encrypted = cipher.update(citizenId, "utf8", "hex");
+  encrypted += cipher.final("hex");
+  return encrypted;
+};
+
+const decryptCitizenId = (encryptedCitizenId, userId) => {
+  try {
+    if (!encryptedCitizenId || !userId) return null;
+    const algorithm = "aes-256-cbc";
+    const key = crypto.scryptSync(process.env.ENCRYPTION_KEY, "salt", 32);
+
+    // สร้าง IV เดิมกลับมาโดยใช้ userId (ซึ่งเราดึงมาจาก DB ได้พร้อมกับข้อมูลที่เข้ารหัส)
+    const iv = crypto
+      .createHash("md5")
+      .update(userId + process.env.ENCRYPTION_KEY)
+      .digest();
+
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encryptedCitizenId, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch (error) {
+    return null;
+  }
 };
 
 const maskCitizenId = (citizenId) => {
@@ -65,521 +73,531 @@ const maskCitizenId = (citizenId) => {
 
 
 module.exports = {
-    UserController: {
-        signIn: async (req, res) => {
-            try {
-                console.log('Request body:', req.body);
-                
-                const { identifier, password } = req.body;
-                
-                if (!identifier || !password) {
-                    return res.status(400).json({ 
-                        message: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน',
-                        token: null 
-                    });
-                }
-                
-                // เข้ารหัส identifier ก่อนค้นหา (ถ้าเป็นตัวเลข 13 หลัก = citizen_id)
-                let encryptedIdentifier = identifier;
-                if (/^\d{13}$/.test(identifier)) {
-                    // ใช้ Deterministic Encryption
-                    encryptedIdentifier = encryptCitizenId(identifier);
-                    // หรือใช้ HMAC (แนะนำ)
-                    // encryptedIdentifier = hashCitizenId(identifier);
-                }
-                
-                const user = await prisma.user.findFirst({
-                    where: {
-                        OR: [
-                            { citizen_id: encryptedIdentifier },
-                            { card_uid: identifier },
-                            { email: identifier }
-                        ]
-                    },
-                    select: {
-                        user_id: true,
-                        email: true,
-                        password: true,
-                        first_name: true,
-                        last_name: true,
-                        role_id: true,
-                        location_id: true,
-                        group_location_id: true,
-                        // ดึงชื่อ location และ group_location ด้วย
-                        Location: {
-                            select: {
-                                location_name: true
-                            }
-                        },
-                        Group_Location: {
-                            select: {
-                                group_location_name: true
-                            }
-                        }
-                    }
-                });
+  UserController: {
+    signIn: async (req, res) => {
+      try {
+        console.log("Request body:", req.body);
 
-                if (!user) {
-                    return res.status(401).json({ 
-                        message: 'ไม่พบผู้ใช้ในระบบ',
-                        token: null 
-                    });
-                }
+        const { identifier, password } = req.body;
 
-                const isPasswordValid = await bcrypt.compare(password, user.password);
-                
-                if (!isPasswordValid) {
-                    return res.status(401).json({ 
-                        message: 'รหัสผ่านไม่ถูกต้อง',
-                        token: null 
-                    });
-                }
+        if (!identifier || !password) {
+          return res.status(400).json({
+            message: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน",
+            token: null,
+          });
+        }
 
-                const token = jwt.sign(
-                    { 
-                        userId: user.user_id, 
-                        role: user.role_id,
-                        email: user.email,
-                        groupLocationId: user.group_location_id,  // ✅ เพิ่ม
-                        locationId: user.location_id              // ✅ เพิ่ม 
-                    }, 
-                    process.env.JWT_SECRET, 
-                    { expiresIn: '24h' }
-                );
+        let searchConditions = [
+          { email: identifier },
+          { card_uid: identifier },
+        ];
 
-                res.status(200).json({ 
-                    message: 'เข้าสู่ระบบสำเร็จ',
-                    token: token,
-                    user: {
-                        id: user.user_id,
-                        email: user.email,
-                        firstName: user.first_name,              
-                        lastName: user.last_name,                
-                        role: user.role_id,
-                        groupLocationId: user.group_location_id, 
-                        locationId: user.location_id,            
-                        locationName: user.Location?.location_name || null,
-                        groupLocationName: user.Group_Location?.group_location_name || null  
-                    }
-                });
+        // เข้ารหัส identifier ก่อนค้นหา (ถ้าเป็นตัวเลข 13 หลัก = citizen_id)
+        if (/^\d{13}$/.test(identifier)) {
+          const citizenHash = hashCitizenId(identifier);
+          searchConditions.push({ citizen_id_search: citizenHash });
+        }
 
-            } catch (error) {
-                console.error('Login error:', error);
-                res.status(500).json({ 
-                    message: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์',
-                    error: error.message,
-                    token: null 
-                });
-            }
-        },
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: searchConditions,
+          },
+          select: {
+            user_id: true,
+            email: true,
+            password: true,
+            first_name: true,
+            last_name: true,
+            role_id: true,
+            location_id: true,
+            group_location_id: true,
+            // ดึงชื่อ location และ group_location ด้วย
+            Location: {
+              select: {
+                location_name: true,
+              },
+            },
+            Group_Location: {
+              select: {
+                group_location_name: true,
+              },
+            },
+          },
+        });
 
-        register: async (req, res) => {
-            try {
-                console.log('Register request body:', req.body);
-                
-                const {
-                    citizen_id,
-                    card_uid,
-                    fingerprint,
-                    first_name,
-                    last_name,
-                    date_of_birth,
-                    religion,
-                    gender,
-                    email,
-                    password,
-                    phone_number,
-                    location_id,
-                    group_location_id,
-                    role_id
-                } = req.body;
+        if (!user) {
+          return res.status(401).json({
+            message: "ไม่พบผู้ใช้ในระบบ",
+            token: null,
+          });
+        }
 
-                // ตรวจสอบข้อมูลที่จำเป็น
-                if (!first_name || !last_name || !email || !password || !role_id) {
-                    console.log('❌ Validation failed: Missing required fields')
-                    return res.status(400).json({ 
-                        message: 'กรุณากรอกข้อมูลที่จำเป็น (ชื่อ, นามสกุล, อีเมล, รหัสผ่าน)'
-                    });
-                }
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
-                // เข้ารหัส citizen_id
-                let encryptedCitizenId = null;
-                if (citizen_id) {
-                    // ใช้ Deterministic Encryption
-                    encryptedCitizenId = encryptCitizenId(citizen_id);
-                    // หรือใช้ HMAC (แนะนำ)
-                    // encryptedCitizenId = hashCitizenId(citizen_id);
-                }
+        if (!isPasswordValid) {
+          return res.status(401).json({
+            message: "รหัสผ่านไม่ถูกต้อง",
+            token: null,
+          });
+        }
 
-                // ตรวจสอบความซ้ำซ้อนแบบปกติด้วย WHERE
-                const existingUser = await prisma.user.findFirst({
-                    where: {
-                        OR: [
-                            { email: email },
-                            encryptedCitizenId ? { citizen_id: encryptedCitizenId } : {},
-                            card_uid ? { card_uid: card_uid } : {}
-                        ].filter(obj => Object.keys(obj).length > 0)
-                    }
-                });
+        const token = jwt.sign(
+          {
+            userId: user.user_id,
+            role: user.role_id,
+            email: user.email,
+            groupLocationId: user.group_location_id, // ✅ เพิ่ม
+            locationId: user.location_id, // ✅ เพิ่ม
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: "24h" },
+        );
 
-                if (existingUser) {
-                    return res.status(409).json({ 
-                        message: 'อีเมล, เลขบัตรประชาชน หรือ Card UID นี้ถูกใช้งานแล้ว'
-                    });
-                }
+        res.status(200).json({
+          message: "เข้าสู่ระบบสำเร็จ",
+          token: token,
+          user: {
+            id: user.user_id,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            role: user.role_id,
+            groupLocationId: user.group_location_id,
+            locationId: user.location_id,
+            locationName: user.Location?.location_name || null,
+            groupLocationName: user.Group_Location?.group_location_name || null,
+          },
+        });
+      } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+          token: null,
+        });
+      }
+    },
 
-                // เข้ารหัสรหัสผ่าน
-                const hashedPassword = await bcrypt.hash(password, 10);
+    register: async (req, res) => {
+      try {
+        console.log("Register request body:", req.body);
 
-                // สร้างผู้ใช้ใหม่
-                const newUser = await prisma.user.create({
-                    data: {
-                        citizen_id: encryptedCitizenId,
-                        card_uid: card_uid || null,
-                        fingerprint: fingerprint || null,
-                        first_name,
-                        last_name,
-                        date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
-                        religion: religion || null,
-                        gender: gender || null,
-                        email,
-                        password: hashedPassword,
-                        phone_number: phone_number || null,
-                        location_id: parseInt(location_id) || null,
-                        group_location_id: parseInt(group_location_id) || null,
-                        role_id: parseInt(role_id),
-                        created_at: new Date(),
-                        updated_at: null
-                    }
-                });
+        const {
+          citizen_id,
+          card_uid,
+          first_name,
+          last_name,
+          date_of_birth,
+          religion,
+          gender,
+          email,
+          password,
+          phone_number,
+          location_id,
+          group_location_id,
+          role_id,
+        } = req.body;
 
-                // สร้าง JWT token
-                const token = jwt.sign(
-                    { 
-                        userId: newUser.user_id, 
-                        role: newUser.role_id,
-                        email: newUser.email 
-                    }, 
-                    process.env.JWT_SECRET, 
-                    { expiresIn: '24h' }
-                );
+        // ตรวจสอบข้อมูลที่จำเป็น
+        if (
+          !first_name ||
+          !last_name ||
+          !email ||
+          !password ||
+          !role_id ||
+          !citizen_id
+        ) {
+          console.log("❌ Validation failed: Missing required fields");
+          return res.status(400).json({
+            message:
+              "กรุณากรอกข้อมูลที่จำเป็น (ชื่อ, นามสกุล, อีเมล, รหัสผ่าน, เลขบัตรประชาชน)",
+          });
+        }
 
-                res.status(201).json({ 
-                    message: 'ลงทะเบียนสำเร็จ',
-                    token: token,
-                    user: {
-                        id: newUser.user_id,
-                        email: newUser.email,
-                        first_name: newUser.first_name,
-                        last_name: newUser.last_name,
-                        role: newUser.role_id
-                    }
-                });
+        const citizenHash = hashCitizenId(citizen_id);
 
-            } catch (error) {
-                console.error('Register error:', error);
-                res.status(500).json({ 
-                    message: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์',
-                    error: error.message
-                });
-            }
-        },
+        const existingUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: email },
+              { citizen_id_search: citizenHash }, // ค้นหาผ่าน Hash (รวดเร็วมาก)
+              card_uid ? { card_uid: card_uid } : {},
+            ].filter((obj) => Object.keys(obj).length > 0),
+          },
+        });
 
-        deleteUser : async (req, res) => {
-            try {
-                const {user_id} = (req.body);
+        if (existingUser) {
+          return res.status(409).json({
+            message: "อีเมล, เลขบัตรประชาชน หรือ Card UID นี้ถูกใช้งานแล้ว",
+          });
+        }
 
-                // ✅ ดึงข้อมูล requester
-                const requester = req.user;
+        // เข้ารหัสรหัสผ่าน
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-                if (!user_id) {
-                    return res.status(400).json({ 
-                        message: 'กรุณากรอก user_id'
-                    });
-                }
+        // สร้างผู้ใช้ใหม่
+        const newUser = await prisma.user.create({
+          data: {
+            citizen_id: "PENDING", // สถานะชั่วคราว รอการเข้ารหัสจริงหลังได้ user_id
+            card_uid: card_uid || null,
+            citizen_id_search: citizenHash, // เก็บ Hash สำหรับค้นหา
+            first_name,
+            last_name,
+            date_of_birth: date_of_birth ? new Date(date_of_birth) : null,
+            religion: religion || null,
+            gender: gender || null,
+            email,
+            password: hashedPassword,
+            phone_number: phone_number || null,
+            location_id: parseInt(location_id) || null,
+            group_location_id: parseInt(group_location_id) || null,
+            role_id: parseInt(role_id),
+            created_at: new Date(),
+            updated_at: null,
+          },
+        });
 
-                // ✅ ดึงข้อมูล target user
-                const targetUser = await prisma.user.findUnique({
-                    where: { user_id: user_id }
-                });
-                
-                if (!targetUser) {
-                    return res.status(404).json({ 
-                        message: 'ไม่พบผู้ใช้ในระบบ'
-                    });
-                }
+        const encryptedValue = encryptCitizenId(citizen_id, newUser.user_id);
 
-                // ✅ ป้องกันการลบตัวเอง
-                if (requester.userId === user_id) {
-                    return res.status(403).json({ 
-                        message: 'คุณไม่สามารถลบบัญชีของตัวเองได้'
-                    });
-                }
+        await prisma.user.update({
+          where: { user_id: newUser.user_id },
+          data: { citizen_id: encryptedValue },
+        });
 
-                // ✅ ตรวจสอบ permission
-                const permission = canManageUser(requester, targetUser);
-                if (!permission.allowed) {
-                    console.log('❌ Permission denied:', permission.reason);
-                    return res.status(403).json({ 
-                        message: permission.reason
-                    });
-                }
+        // สร้าง JWT token
+        const token = jwt.sign(
+          {
+            userId: newUser.user_id,
+            role: newUser.role_id,
+            email: newUser.email,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: "24h" },
+        );
 
-                // ลบผู้ใช้
-                await prisma.user.delete({
-                    where: { user_id: user_id }
-                });
+        res.status(201).json({
+          message: "ลงทะเบียนสำเร็จ",
+          token: token,
+          user: {
+            id: newUser.user_id,
+            email: newUser.email,
+            first_name: newUser.first_name,
+            last_name: newUser.last_name,
+            role: newUser.role_id,
+          },
+        });
+      } catch (error) {
+        console.error("Register error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+        });
+      }
+    },
 
-                res.status(200).json({ 
-                    message: 'ลบผู้ใช้สำเร็จ'
-                });
+    deleteUser: async (req, res) => {
+      try {
+        const { user_id } = req.body;
 
-            } catch (error) {
-                //dont find user_id
-                console.error('Delete user error:', error);
-                res.status(500).json({ 
-                    message: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์',
-                    error: error.message
-                });
-            }
-        },
+        // ✅ ดึงข้อมูล requester
+        const requester = req.user;
 
-        //Edit User ข้อมูลผู้ใช้มีอะไรบ้างที่สามารถแก้ไขได้
-        editUser : async (req, res) => {
-            try {
-                // รับค่าจาก body
-                const {
-                    user_id,
-                    location_id,
-                    group_location_id,
-                    first_name,
-                    last_name,
-                    religion,
-                    gender,
-                    password,
-                    phone_number,
-                    role_id
-                } = req.body;
+        if (!user_id) {
+          return res.status(400).json({
+            message: "กรุณากรอก user_id",
+          });
+        }
 
-                // ✅ ดึงข้อมูล requester
-                const requester = req.user;
+        // ✅ ดึงข้อมูล target user
+        const targetUser = await prisma.user.findUnique({
+          where: { user_id: user_id },
+        });
 
-                // ตรวจสอบว่ามี user_id หรือไม่
-                if (!user_id) {
-                    return res.status(400).json({ 
-                        message: 'กรุณาระบุ user_id'
-                    });
-                }
+        if (!targetUser) {
+          return res.status(404).json({
+            message: "ไม่พบผู้ใช้ในระบบ",
+          });
+        }
 
-                // ✅ ดึงข้อมูล target user
-                const targetUser = await prisma.user.findUnique({
-                    where: { user_id: user_id }
-                });
+        // ✅ ป้องกันการลบตัวเอง
+        if (requester.userId === user_id) {
+          return res.status(403).json({
+            message: "คุณไม่สามารถลบบัญชีของตัวเองได้",
+          });
+        }
 
-                if (!targetUser) {
-                    return res.status(404).json({ 
-                        message: 'ไม่พบผู้ใช้ในระบบ'
-                    });
-                }
+        // ✅ ตรวจสอบ permission
+        const permission = canManageUser(requester, targetUser);
+        if (!permission.allowed) {
+          console.log("❌ Permission denied:", permission.reason);
+          return res.status(403).json({
+            message: permission.reason,
+          });
+        }
 
-                // ✅ ตรวจสอบ permission
-                const permission = canManageUser(requester, targetUser);
-                if (!permission.allowed) {
-                    console.log('❌ Permission denied:', permission.reason);
-                    return res.status(403).json({ 
-                        message: permission.reason
-                    });
-                }
+        // soft delete by setting deleted_at
+        await prisma.user.update({
+          where: { user_id: user_id },
+          data: { deleted_at: new Date() },
+        });
 
-                // ✅ ถ้ามีการเปลี่ยน role ต้องตรวจสอบว่ามีสิทธิ์สร้าง role นั้นหรือไม่
-                if (role_id && role_id !== targetUser.role_id) {
-                    const canCreate = canCreateUserWithRole(requester, role_id);
-                    if (!canCreate.allowed) {
-                        return res.status(403).json({ 
-                            message: canCreate.reason
-                        });
-                    }
-                }
+        await prisma.user_locker_grant.deleteMany({
+          where: { user_id: user_id },
+        });
 
-                // สร้าง object สำหรับ update เฉพาะฟิลด์ที่ส่งมา
-                const updateData = {};
+        res.status(200).json({
+          message: "ลบผู้ใช้สำเร็จ",
+        });
+      } catch (error) {
+        //dont find user_id
+        console.error("Delete user error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+        });
+      }
+    },
 
-                if (location_id !== undefined) updateData.location_id = location_id;
-                if (group_location_id !== undefined) updateData.group_location_id = group_location_id;
-                if (first_name !== undefined) updateData.first_name = first_name;
-                if (last_name !== undefined) updateData.last_name = last_name;
-                if (religion !== undefined) updateData.religion = religion;
-                if (gender !== undefined) updateData.gender = gender;
-                if (phone_number !== undefined) updateData.phone_number = phone_number;
-                if (role_id !== undefined) updateData.role_id = role_id;
+    //Edit User ข้อมูลผู้ใช้มีอะไรบ้างที่สามารถแก้ไขได้
+    editUser: async (req, res) => {
+      try {
+        // รับค่าจาก body
+        const {
+          user_id,
+          location_id,
+          group_location_id,
+          first_name,
+          last_name,
+          religion,
+          gender,
+          password,
+          phone_number,
+          role_id,
+        } = req.body;
 
-                // ถ้ามีการเปลี่ยนรหัสผ่าน ให้เข้ารหัสก่อน
-                if (password) {
-                    updateData.password = await bcrypt.hash(password, 10);
-                }
+        // ✅ ดึงข้อมูล requester
+        const requester = req.user;
 
-                // อัพเดทเวลาที่แก้ไข
-                updateData.updated_at = new Date();
+        // ตรวจสอบว่ามี user_id หรือไม่
+        if (!user_id) {
+          return res.status(400).json({
+            message: "กรุณาระบุ user_id",
+          });
+        }
 
-                // ตรวจสอบว่ามีข้อมูลที่จะอัพเดทหรือไม่
-                if (Object.keys(updateData).length === 1) { // มีแค่ updated_at
-                    return res.status(400).json({ 
-                        message: 'กรุณาระบุข้อมูลที่ต้องการแก้ไข'
-                    });
-                }
+        // ✅ ดึงข้อมูล target user
+        const targetUser = await prisma.user.findUnique({
+          where: { user_id: user_id },
+        });
 
-                // อัพเดทข้อมูลผู้ใช้
-                const updatedUser = await prisma.user.update({
-                    where: {
-                        user_id: user_id
-                    },
-                    data: updateData,
-                    select: {
-                        user_id: true,
-                        first_name: true,
-                        last_name: true,
-                        email: true,
-                        phone_number: true,
-                        gender: true,
-                        religion: true,
-                        role_id: true,
-                        location_id: true,
-                        group_location_id: true,
-                        updated_at: true
-                    }
-                });
+        if (!targetUser) {
+          return res.status(404).json({
+            message: "ไม่พบผู้ใช้ในระบบ",
+          });
+        }
 
-                res.status(200).json({ 
-                    message: 'แก้ไขข้อมูลผู้ใช้สำเร็จ',
-                    user: updatedUser
-                });
+        // ✅ ตรวจสอบ permission
+        const permission = canManageUser(requester, targetUser);
+        if (!permission.allowed) {
+          console.log("❌ Permission denied:", permission.reason);
+          return res.status(403).json({
+            message: permission.reason,
+          });
+        }
 
-            } catch (error) {
-                console.error('Edit user error:', error);
-                res.status(500).json({ 
-                    message: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์',
-                    error: error.message
-                });
-            }
-        },
-        
-        getAllUsers: async (req, res) => {
-            try {
-                const { search } = req.query;
+        // ✅ ถ้ามีการเปลี่ยน role ต้องตรวจสอบว่ามีสิทธิ์สร้าง role นั้นหรือไม่
+        if (role_id && role_id !== targetUser.role_id) {
+          const canCreate = canCreateUserWithRole(requester, role_id);
+          if (!canCreate.allowed) {
+            return res.status(403).json({
+              message: canCreate.reason,
+            });
+          }
+        }
 
-                // ✅ ดึงข้อมูล requester จาก token
-                const requester = req.user; // จาก authenticateToken middleware
+        // สร้าง object สำหรับ update เฉพาะฟิลด์ที่ส่งมา
+        const updateData = {};
 
-                console.log('🔍 Fetching users for:', {
-                    userId: requester.userId,
-                    role: requester.role,
-                    groupLocationId: requester.groupLocationId,
-                    locationId: requester.locationId
-                });
+        if (location_id !== undefined) updateData.location_id = location_id;
+        if (group_location_id !== undefined)
+          updateData.group_location_id = group_location_id;
+        if (first_name !== undefined) updateData.first_name = first_name;
+        if (last_name !== undefined) updateData.last_name = last_name;
+        if (religion !== undefined) updateData.religion = religion;
+        if (gender !== undefined) updateData.gender = gender;
+        if (phone_number !== undefined) updateData.phone_number = phone_number;
+        if (role_id !== undefined) updateData.role_id = role_id;
 
-                // ✅ สร้าง filter scope ตาม role
-                const scopeFilter = getUserFilterScope(requester);
-                console.log('📋 Scope filter:', scopeFilter);
+        // ถ้ามีการเปลี่ยนรหัสผ่าน ให้เข้ารหัสก่อน
+        if (password) {
+          updateData.password = await bcrypt.hash(password, 10);
+        }
 
-                let whereCondition = { ...scopeFilter};
-                
-                if (search) {
-                    console.log('Search term:', search);
-                    whereCondition = {
-                        OR: [
-                            { first_name: { contains: search, mode: 'insensitive' } },
-                            { last_name: { contains: search, mode: 'insensitive' } },
-                            { email: { contains: search, mode: 'insensitive' } },
-                            { card_uid: { contains: search, mode: 'insensitive' } },
-                        ]
-                    };
-                }
+        // อัพเดทเวลาที่แก้ไข
+        updateData.updated_at = new Date();
 
-                // ดึงข้อมูลผู้ใช้ทั้งหมด พร้อม relation
-                const users = await prisma.user.findMany({
-                    where: whereCondition,
-                    select: {
-                        user_id: true,
-                        citizen_id: true,
-                        card_uid: true,
-                        first_name: true,
-                        last_name: true,
-                        date_of_birth: true,
-                        religion: true,
-                        gender: true,
-                        email: true,
-                        phone_number: true,
-                        role_id: true,
-                        location_id: true,
-                        group_location_id: true,
-                        created_at: true,
-                        updated_at: true,
-                        // ดึงข้อมูล relation (ถ้ามี)
-                        Role: {
-                            select: {
-                                role_name: true
-                            }
-                        },
-                        Location: {
-                            select: {
-                                location_name: true
-                            }
-                        },
-                        Group_Location: {
-                            select: {
-                                group_location_name: true
-                            }
-                        }
-                    },
-                    orderBy: {
-                        created_at: 'asc'
-                    }
-                });
+        // ตรวจสอบว่ามีข้อมูลที่จะอัพเดทหรือไม่
+        if (Object.keys(updateData).length === 1) {
+          // มีแค่ updated_at
+          return res.status(400).json({
+            message: "กรุณาระบุข้อมูลที่ต้องการแก้ไข",
+          });
+        }
 
-                console.log(`✅ Found ${users.length} users (filtered by scope)`);
+        // อัพเดทข้อมูลผู้ใช้
+        const updatedUser = await prisma.user.update({
+          where: {
+            user_id: user_id,
+          },
+          data: updateData,
+          select: {
+            user_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            phone_number: true,
+            gender: true,
+            religion: true,
+            role_id: true,
+            location_id: true,
+            group_location_id: true,
+            updated_at: true,
+          },
+        });
 
-                // จัดรูปแบบข้อมูลก่อนส่งกลับ
-                const formattedUsers = users.map(user => ({
-                    user_id: user.user_id,
-                    citizen_id: user.citizen_id ? maskCitizenId(user.citizen_id) : null,
-                    card_uid: user.card_uid,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    date_of_birth: user.date_of_birth,
-                    religion: user.religion,
-                    gender: user.gender,
-                    email: user.email,
-                    phone_number: user.phone_number,
-                    role_id: user.role_id,
-                    role: user.Role?.role_name || 'ไม่ระบุ',  // ✅ ใช้ Role ตัวใหญ่
-                    location_id: user.location_id,
-                    location_name: user.Location?.location_name || null,  // ✅ ใช้ Location ตัวใหญ่
-                    group_location_id: user.group_location_id,
-                    group_name: user.Group_Location?.group_location_name || null,  // ✅ ใช้ Group_Location และ field ที่ถูกต้อง
-                    created_at: user.created_at,
-                    updated_at: user.updated_at
-                }));
+        res.status(200).json({
+          message: "แก้ไขข้อมูลผู้ใช้สำเร็จ",
+          user: updatedUser,
+        });
+      } catch (error) {
+        console.error("Edit user error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+        });
+      }
+    },
 
-                res.status(200).json({ 
-                    message: 'ดึงข้อมูลผู้ใช้สำเร็จ',
-                    count: formattedUsers.length,
-                    users: formattedUsers,
-                    // ✅ ส่งข้อมูล requester กลับไปด้วย (สำหรับ UI)
-                    requester: {
-                        role: requester.role,
-                        groupLocationId: requester.groupLocationId,
-                        locationId: requester.locationId
-                    }
-                });
+    getAllUsers: async (req, res) => {
+      try {
+        const { search } = req.query;
 
-            } catch (error) {
-                console.error('Get all users error:', error);
-                res.status(500).json({ 
-                    message: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์',
-                    error: error.message,
-                    users: []
-                });
-            }
-        },
-    }
+        // ✅ ดึงข้อมูล requester จาก token
+        const requester = req.user; // จาก authenticateToken middleware
+
+        console.log("🔍 Fetching users for:", {
+          userId: requester.userId,
+          role: requester.role,
+          groupLocationId: requester.groupLocationId,
+          locationId: requester.locationId,
+        });
+
+        // ✅ สร้าง filter scope ตาม role
+        const scopeFilter = getUserFilterScope(requester);
+        console.log("📋 Scope filter:", scopeFilter);
+
+        let whereCondition = { ...scopeFilter };
+
+        if (search) {
+          console.log("Search term:", search);
+          whereCondition = {
+            OR: [
+              { first_name: { contains: search, mode: "insensitive" } },
+              { last_name: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+              { card_uid: { contains: search, mode: "insensitive" } },
+            ],
+            AND: [
+              { deleted_at: null }, // ไม่แสดงผู้ใช้ที่ถูกลบ
+            ],
+          };
+        }
+
+        // ดึงข้อมูลผู้ใช้ทั้งหมด พร้อม relation
+        const users = await prisma.user.findMany({
+          where: whereCondition,
+          select: {
+            user_id: true,
+            citizen_id: true,
+            card_uid: true,
+            first_name: true,
+            last_name: true,
+            date_of_birth: true,
+            religion: true,
+            gender: true,
+            email: true,
+            phone_number: true,
+            role_id: true,
+            location_id: true,
+            group_location_id: true,
+            created_at: true,
+            updated_at: true,
+            // ดึงข้อมูล relation (ถ้ามี)
+            Role: {
+              select: {
+                role_name: true,
+              },
+            },
+            Location: {
+              select: {
+                location_name: true,
+              },
+            },
+            Group_Location: {
+              select: {
+                group_location_name: true,
+              },
+            },
+          },
+          orderBy: {
+            created_at: "asc",
+          },
+        });
+
+        console.log(`✅ Found ${users.length} users (filtered by scope)`);
+
+        // จัดรูปแบบข้อมูลก่อนส่งกลับ
+        const formattedUsers = users.map((user) => ({
+          user_id: user.user_id,
+          citizen_id: user.citizen_id ? maskCitizenId(user.citizen_id) : null,
+          card_uid: user.card_uid,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          date_of_birth: user.date_of_birth,
+          religion: user.religion,
+          gender: user.gender,
+          email: user.email,
+          phone_number: user.phone_number,
+          role_id: user.role_id,
+          role: user.Role?.role_name || "ไม่ระบุ", // ✅ ใช้ Role ตัวใหญ่
+          location_id: user.location_id,
+          location_name: user.Location?.location_name || null, // ✅ ใช้ Location ตัวใหญ่
+          group_location_id: user.group_location_id,
+          group_name: user.Group_Location?.group_location_name || null, // ✅ ใช้ Group_Location และ field ที่ถูกต้อง
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+        }));
+
+        res.status(200).json({
+          message: "ดึงข้อมูลผู้ใช้สำเร็จ",
+          count: formattedUsers.length,
+          users: formattedUsers,
+          //ส่งข้อมูล requester กลับไปด้วย (สำหรับ UI)
+          requester: {
+            role: requester.role,
+            groupLocationId: requester.groupLocationId,
+            locationId: requester.locationId,
+          },
+        });
+      } catch (error) {
+        console.error("Get all users error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+          users: [],
+        });
+      }
+    },
+  },
+  decryptCitizenId,
 };

@@ -20,6 +20,7 @@ const { DashboardController } = require('./controllers/DashboardController');
 const { LockerProvisionController } = require('./controllers/LockerProvisionController'); //lockerprovisioncontroller
 const { TransactionController } = require('./controllers/TransactionController'); //transactioncontroller
 const { TransactionDetailController } = require('./controllers/TransactionDetailController'); //transactiondetailcontroller
+const { SyncController } = require('./controllers/SyncController'); //synccontroller
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -39,6 +40,7 @@ app.post('/userLockerGrant/createUserLockerGrant',authenticateToken, requireDepa
 app.post('/userLockerGrant/updateUserLockerGrant', authenticateToken, requireDepartmentAdmin, UserLockerGrantController.updateUserLockerGrant); //Update UserLockerGrant route
 app.post('/userLockerGrant/deleteUserLockerGrant', authenticateToken, requireDepartmentAdmin, UserLockerGrantController.deleteUserLockerGrant); //Delete UserLockerGrant route
 app.get('/userLockerGrant/getAllUserLockerGrant', authenticateToken, requireDepartmentAdmin, UserLockerGrantController.getAllUserLockerGrant); //Get All UserLockerGrant route
+app.get('/userLockerGrant/sync/users', LockerController.verifyLocker, SyncController.syncUsers, SyncController.syncProducts); //Sync UserLockerGrant route
 
 //Product routes
 app.post('/product/createProduct', authenticateToken, requireDepartmentAdminOnly, ProductController.createProduct); //Create Product route
@@ -73,6 +75,7 @@ app.get('/locker/getLockerByGroupLocationId/:group_location_id', authenticateTok
 // ✅ เพิ่ม Route ใหม่สำหรับดึงเฉพาะ Locker ที่ activated
 app.get('/locker/getActivatedLockersByLocationId/:location_id', authenticateToken, requireDepartmentAdmin, LockerController.getActivatedLockersByLocationId);
 app.get('/locker/getLockerDontHaveProvision', authenticateToken, requireSystemAdmin, LockerController.getLockerDontHaveProvision); //Get Locker by ID route
+app.post('/locker/heartbeat', LockerController.verifyLocker, LockerController.lockerHeartbeat); //Locker Heartbeat route
 
 //Locker Provision routes
 app.post('/lockerProvision/createProvision', authenticateToken, requireSystemAdmin, LockerProvisionController.createProvision); //Create Locker Provision route

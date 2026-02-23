@@ -21,6 +21,7 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [redirecting, setRedirecting] = useState(false);
   
   const router = useRouter();
   const API_URL = config.apiUrl;
@@ -61,6 +62,8 @@ export default function SignIn() {
         
         console.log('✅ Token and user data saved');
         console.log('User data:', response.data.user);
+
+        setRedirecting(true);
         
         // ✅ redirect ไปหน้า dashboard
         router.push('/dashboard');
@@ -267,6 +270,21 @@ export default function SignIn() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Loading Overlay during redirect */}
+      {redirecting && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 shadow-xl">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+              <div className="text-center">
+                <p className="text-lg font-semibold text-gray-900">เข้าสู่ระบบสำเร็จ</p>
+                <p className="text-sm text-gray-500 mt-1">กำลังนำคุณไปหน้าหลัก...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

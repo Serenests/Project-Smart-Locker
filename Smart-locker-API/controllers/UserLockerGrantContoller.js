@@ -96,7 +96,7 @@ module.exports = {
                         message: "กรุณาระบุ user_locker_grant_id"
                     });
                 }
-
+                
                 await prisma.user_locker_grant.delete({
                     where: {
                         user_locker_grant_id: user_locker_grant_id

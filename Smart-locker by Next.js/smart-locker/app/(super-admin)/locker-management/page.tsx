@@ -695,7 +695,7 @@ export default function LockerManagementPage() {
               /> 
             </div>
             {currentUser?.role === 1 && (
-              <Button className="bg-gray-800 hover:bg-gray-900" onClick={handleOpenCreateDialog}>
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleOpenCreateDialog}>
                 <Plus className="h-4 w-4 mr-2" />
                 เพิ่มล็อกเกอร์
               </Button>

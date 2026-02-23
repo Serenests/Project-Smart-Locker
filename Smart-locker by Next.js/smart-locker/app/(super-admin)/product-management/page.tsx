@@ -227,7 +227,7 @@ export default function ProductManagementPage() {
             className="pl-10"
           /> 
         </div>
-        <Button className="bg-gray-800" onClick={handleOpenCreateDialog}>
+        <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleOpenCreateDialog}>
           <Plus className="h-4 w-4 mr-2" />
           เพิ่มรายการยา
         </Button>

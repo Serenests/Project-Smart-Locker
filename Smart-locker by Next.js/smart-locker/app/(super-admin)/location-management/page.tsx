@@ -507,7 +507,7 @@ export default function LocationManagementPage() {
             </div>
             {/* เฉพาะ role 1 และ 2 สามารถเพิ่มสถานที่ได้ */}
             {(currentUser?.role === 1 || currentUser?.role === 2) && (
-              <Button className="bg-gray-800 hover:bg-gray-900" onClick={handleOpenCreateDialog}>
+              <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleOpenCreateDialog}>
                 <Plus className="h-4 w-4 mr-2" />
                 เพิ่มสถานที่
               </Button>

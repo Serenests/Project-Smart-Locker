@@ -95,6 +95,11 @@ export default function DashboardPage() {
         return
       }
 
+      if(user.role === 4) {
+        console.log('⚠️ User with role 4 logged in, limited access')
+        router.push('/signin') // อาจจะยังอยู่ที่เดิม แต่จะมีการแสดงผลที่จำกัด
+      }
+
       console.log('✅ Current user:', user)
       setCurrentUser(user)
       fetchDashboardData()
