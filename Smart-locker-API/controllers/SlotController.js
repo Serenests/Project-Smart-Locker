@@ -81,9 +81,12 @@ module.exports = {
                 }
 
                 // ลบข้อมูล Slot
-                await prisma.slot.delete({
+                await prisma.slot.update({
                     where: {
                         slot_id: slot_id
+                    },
+                    data: {
+                        deleted_at: new Date()
                     }
                 });
 
@@ -195,7 +198,13 @@ module.exports = {
 
                 const slots = await prisma.slot.findMany({
                     where: {
-                        locker_id: parseInt(locker_id)
+                        locker_id: parseInt(locker_id),
+                        deleted_at: null
+                        
+                    },
+                    //เพิ่มการเรียงข้อมูล ตาม slot_id จากน้อยไปมาก
+                    orderBy: {
+                        slot_id: 'asc'
                     },
                     include:{
                         Slot_stock:{
@@ -212,7 +221,8 @@ module.exports = {
                                 }
                             }
                         }
-                    }
+                    },
+                    
                 });
 
                 res.status(200).json({

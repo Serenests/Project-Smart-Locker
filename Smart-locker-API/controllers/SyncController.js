@@ -122,5 +122,53 @@ module.exports = {
         res.status(500).json({ message: "Failed to sync products" });
       }
     },
+
+    synSlots : async (req, res) => {
+      const { last_sync } = req.query;
+      const lastSyncDate = last_sync ? new Date(last_sync) : new Date(0);
+
+      try {
+        const updatedSlots = await prisma.Slot.findMany({
+          where: {
+            AND: [
+              {
+                Locker: {
+                  locker_id: req.locker.locker_id,
+                },
+              },
+              {
+                OR: [
+                  { created_at: { gt: lastSyncDate } },
+                  { updated_at: { gt: lastSyncDate } },
+                  { deleted_at: { gt: lastSyncDate } },
+                ],
+              },
+            ],
+          },
+          select: {
+            slot_id: true,
+            locker_id: true,
+            capacity: true,
+            created_at: true,
+            updated_at: true,
+            deleted_at: true,
+          },
+        });
+
+        console.log(`[SYNC] synced ${updatedSlots.length} slots`);
+
+        res.json({
+          status: "success",
+          server_time: new Date().toISOString(),
+          count: updatedSlots.length,
+          data: updatedSlots,
+        });
+      } catch (error) {
+        console.error("Sync Error:", error);
+        res.status(500).json({ message: "Failed to sync slots" });
+      }
+    },
+
+    
   },
 };

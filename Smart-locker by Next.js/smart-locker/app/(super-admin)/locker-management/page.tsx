@@ -917,7 +917,7 @@ export default function LockerManagementPage() {
 
       {/* ===== VIEW SLOTS DIALOG ===== */}
       <Dialog open={isViewSlotsDialogOpen} onOpenChange={setIsViewSlotsDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!w-[55vw] !max-w-[55vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Box className="h-5 w-5" />
@@ -953,13 +953,13 @@ export default function LockerManagementPage() {
                 <p className="text-gray-500 mb-4">เริ่มต้นด้วยการเพิ่มช่องเก็บของใหม่</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {slots.map((slot) => (
-                  <Card key={slot.slot_id} className="overflow-hidden">
+                  <Card key={slot.slot_id} className="overflow-hidden w-full">
                     <CardHeader className="bg-gray-50 pb-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Box className="h-4 w-4" />
+                        <CardTitle className="text-sm flex items-center gap-1 whitespace-nowrap">
+                          <Box className="h-4 w-4 shrink-0" />
                           Slot #{slot.slot_id}
                         </CardTitle>
                         {currentUser?.role === 1 && (
@@ -986,7 +986,7 @@ export default function LockerManagementPage() {
                         ความจุ: {slot.capacity} หน่วย
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-4">
+                    <CardContent className="pt-0">
                       {!slot.Slot_stock || slot.Slot_stock.length === 0 ? (
                         <div className="text-center py-4 text-sm text-gray-500 bg-gray-50 rounded-md flex items-center justify-center gap-2">
                           <AlertCircle className="h-4 w-4" />
@@ -995,38 +995,44 @@ export default function LockerManagementPage() {
                       ) : (
                         <div className="space-y-3">
                           <p className="text-xs font-medium text-gray-700 uppercase">สินค้าในช่อง:</p>
-                          {slot.Slot_stock.map((stock: any) => (
-                            <div 
-                              key={stock.slot_stock_id} 
-                              className="border rounded-lg p-3 bg-white hover:bg-gray-50 transition-colors"
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <p className="font-medium text-sm">
+                            <div className="grid grid-cols-2 gap-2">
+                            {slot.Slot_stock.map((stock: any) => (
+                              // แก้ที่ stock item div
+                              <div
+                                key={stock.slot_stock_id}
+                                className="border rounded-lg p-2 bg-white hover:bg-gray-50 transition-colors"
+                              >
+                                <div className="flex flex-col gap-1">
+                                  
+                                  <p className="font-medium text-xs truncate" title={stock.Product?.product_name}>
                                     {stock.Product?.product_name || "ไม่ระบุชื่อ"}
                                   </p>
-                                  <p className="text-xs text-gray-500 mt-0.5">
+                                  
+                                  <p className="text-xs text-gray-500">
                                     Lot: {stock.lot_id}
                                   </p>
+                                  <div className="flex items-center justify-between gap-1">
+                                    <Badge variant="secondary" className="text-xs shrink-0">
+                                      {stock.amount} ชิ้น
+                                    </Badge>
+                                  </div>
+                                  {stock.expired_at && (
+                                    <div className="flex items-center gap-1 pt-1 border-t">
+                                      <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                                      <p className="text-xs text-gray-600">
+                                        {new Date(stock.expired_at).toLocaleDateString('th-TH', {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
-                                <Badge variant="secondary" className="text-xs">
-                                  {stock.amount} ชิ้น
-                                </Badge>
                               </div>
-                              {stock.expired_at && (
-                                <div className="flex items-center gap-1 mt-2 pt-2 border-t">
-                                  <AlertTriangle className="h-3 w-3 text-amber-500" />
-                                  <p className="text-xs text-gray-600">
-                                    หมดอายุ: {new Date(stock.expired_at).toLocaleDateString('th-TH', {
-                                      year: 'numeric',
-                                      month: 'short',
-                                      day: 'numeric'
-                                    })}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
                           ))}
+                          </div>
+                          
                         </div>
                       )}
                     </CardContent>

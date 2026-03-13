@@ -21,6 +21,8 @@ const { LockerProvisionController } = require('./controllers/LockerProvisionCont
 const { TransactionController } = require('./controllers/TransactionController'); //transactioncontroller
 const { TransactionDetailController } = require('./controllers/TransactionDetailController'); //transactiondetailcontroller
 const { SyncController } = require('./controllers/SyncController'); //synccontroller
+const { SnapshotController } = require('./controllers/SnapshotController'); //snapshotcontroller
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -33,6 +35,9 @@ app.post('/user/editUser', authenticateToken, requireDepartmentAdmin, UserContro
 // app.get('/user/getAllUsers', UserController.getAllUsers);
 app.get('/user/getAllUsers', authenticateToken, requireDepartmentAdmin,UserController.getAllUsers
 );
+// สำหรับ Report
+app.get('/user/getUsersByLocation', authenticateToken, requireDepartmentAdmin, UserController.getUsersByLocation);
+app.get('/user/getUsersByGroup', authenticateToken, requireOrganizeAdmin, UserController.getUsersByGroup);
 
 
 //UserLockerGrant routes
@@ -40,13 +45,14 @@ app.post('/userLockerGrant/createUserLockerGrant',authenticateToken, requireDepa
 app.post('/userLockerGrant/updateUserLockerGrant', authenticateToken, requireDepartmentAdmin, UserLockerGrantController.updateUserLockerGrant); //Update UserLockerGrant route
 app.post('/userLockerGrant/deleteUserLockerGrant', authenticateToken, requireDepartmentAdmin, UserLockerGrantController.deleteUserLockerGrant); //Delete UserLockerGrant route
 app.get('/userLockerGrant/getAllUserLockerGrant', authenticateToken, requireDepartmentAdmin, UserLockerGrantController.getAllUserLockerGrant); //Get All UserLockerGrant route
-app.get('/userLockerGrant/sync/users', LockerController.verifyLocker, SyncController.syncUsers, SyncController.syncProducts); //Sync UserLockerGrant route
+app.get('/userLockerGrant/sync/users', LockerController.verifyLocker, SyncController.syncUsers); //Sync UserLockerGrant route
 
 //Product routes
 app.post('/product/createProduct', authenticateToken, requireDepartmentAdminOnly, ProductController.createProduct); //Create Product route
 app.post('/product/deleteProduct',authenticateToken, requireSystemAdmin, ProductController.deleteProduct); //Delete Product route
 app.post('/product/updateProduct', authenticateToken, requireDepartmentAdminOnly, ProductController.editProduct);//Update Product route
 app.get('/product/getAllProducts', authenticateToken, requireAnyUser, ProductController.getAllProducts); //Get All Product route
+app.get("/product/sync/products",LockerController.verifyLocker,SyncController.syncProducts); //Sync UserLockerGrant route
 
 //GroupLocation routes
 app.post('/grouplocation/createGrouplocation', authenticateToken, requireSystemAdmin, GroupLocationController.createGroupLocation); //Create GroupLocation route
@@ -90,6 +96,7 @@ app.post('/slot/updateSlot', SlotController.editSlot); //Edit Slot route
 app.post('/slot/deleteSlot', SlotController.deleteSlot); //Delete Slot route
 app.get('/slot/getAllSlot', SlotController.getAllSlot); //Get All Slot route
 app.get('/slot/getSlotsByLockerId/:locker_id', SlotController.getSlotsByLockerId);
+app.get('/slot/sync/slots',LockerController.verifyLocker,SyncController.synSlots); //Sync Slot route
 
 //SlotStock routes
 app.post('/slotStock/createSlotStock', SlotStockController.createSlotStock);  //Create SlotStock route
@@ -100,7 +107,7 @@ app.get('/slotStock/getAllSlotStocks', SlotStockController.getAllSlotStock); //G
 //Transaction routes
 app.post('/transaction/createTransaction', authenticateToken, requireSystemAdmin, TransactionController.createTransaction);
 app.post('/transaction/updateTransaction', authenticateToken, requireSystemAdmin, TransactionController.editTransaction);
-app.post('/transaction/deleteTransaction', authenticateToken, requireSystemAdmin, TransactionController.deleteTransaction);
+app.post('/transaction/deleteTransaction', TransactionController.deleteTransaction);
 app.get('/transaction/getAllTransactions', authenticateToken, requireSystemAdmin, TransactionController.getAllTransactions);
 app.get('/transaction/getTransactionById/:transaction_id', authenticateToken, requireSystemAdmin, TransactionController.getTransactionById);
 // ✅ Routes ใหม่
@@ -108,6 +115,9 @@ app.get('/transaction/getTransactionsByGroup', authenticateToken, requireOrganiz
 app.get('/transaction/getTransactionsByLocation', authenticateToken, requireDepartmentAdmin, TransactionController.getTransactionsByLocation);
 // ✅ Route สำหรับออกใบรีพอร์ต
 app.get('/transaction/getReportData', authenticateToken, requireDepartmentAdmin, TransactionController.getReportData);
+
+//สำหรับสร้าง Transaction จาก Locker
+app.post('/transaction/createTransactionFromLocker', TransactionController.createTransactionFromLocker);
 
 //Trasaction_detail routes
 // Transaction Detail routes
@@ -124,7 +134,9 @@ app.post('/camera/createCamera', CameraController.createCamera);  //Create Camer
 app.post('/camera/updateCamera', CameraController.editCamera); //Edit Camera route
 app.post('/camera/deleteCamera', CameraController.deleteCamera); //Delete Camera route
 
-
+//Snapshot routes
+app.post('/snapshot/saveSnapshot', SnapshotController.saveSnapshot);  //Create Snapshot route
+app.get('/snapshot/getSnapshotsByTransaction/:transaction_id', SnapshotController.getSnapshotsByTransaction); //Get Snapshots by Transaction ID route
 
 // เพิ่ม middleware authentication
 // Dashboard routes

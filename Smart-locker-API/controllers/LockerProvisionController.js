@@ -173,6 +173,20 @@ module.exports = {
           where: { locker_id: provision_id.locker_id },
         });
 
+        await prisma.transaction.deleteMany({
+          where: { locker_id: provision_id.locker_id },
+        });
+
+        await prisma.transaction_detail.deleteMany({
+          where: { locker_id: provision_id.locker_id },
+        });
+
+        await prisma.slot_stock.deleteMany({
+          //ลบข้อมูลในตาราง slot_stock ที่ slot_stock_id ตรงกับ slot_id ของ locker_id ที่ถูกลบ
+          where: { locker_id: provision_id.locker_id },
+        });
+
+
         res.status(200).json({
           message: "ลบการจัดสรรล็อกเกอร์สำเร็จ",
         });

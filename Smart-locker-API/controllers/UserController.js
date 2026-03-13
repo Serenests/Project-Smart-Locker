@@ -1,12 +1,16 @@
 //Smart-locker-API/controllers/UserController.js
-const { PrismaClient } = require('@prisma/client');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const { canManageUser, canCreateUserWithRole, getUserFilterScope } = require('../utils/permissionHelper');
-require('dotenv').config();
+const { PrismaClient } = require("@prisma/client");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+const {
+  canManageUser,
+  canCreateUserWithRole,
+  getUserFilterScope,
+} = require("../utils/permissionHelper");
+require("dotenv").config();
 
-const prisma = require('../lib/prisma');
+const prisma = require("../lib/prisma");
 
 const hashCitizenId = (citizenId) => {
   if (!citizenId) return null;
@@ -56,21 +60,20 @@ const decryptCitizenId = (encryptedCitizenId, userId) => {
 };
 
 const maskCitizenId = (citizenId) => {
-    if (!citizenId) return null;
-    
-    // ถ้าเป็น encrypted data (hex string) ให้แสดงแค่บางส่วน
-    if (citizenId.length > 13) {
-        return `${citizenId.substring(0, 8)}...${citizenId.substring(citizenId.length - 4)}`;
-    }
-    
-    // ถ้าเป็นเลขบัตรปกติ 13 หลัก
-    if (citizenId.length === 13) {
-        return `${citizenId.substring(0, 4)}*****${citizenId.substring(11)}`;
-    }
-    
-    return citizenId;
-};
+  if (!citizenId) return null;
 
+  // ถ้าเป็น encrypted data (hex string) ให้แสดงแค่บางส่วน
+  if (citizenId.length > 13) {
+    return `${citizenId.substring(0, 8)}...${citizenId.substring(citizenId.length - 4)}`;
+  }
+
+  // ถ้าเป็นเลขบัตรปกติ 13 หลัก
+  if (citizenId.length === 13) {
+    return `${citizenId.substring(0, 4)}*****${citizenId.substring(11)}`;
+  }
+
+  return citizenId;
+};
 
 module.exports = {
   UserController: {
@@ -595,6 +598,111 @@ module.exports = {
           message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
           error: error.message,
           users: [],
+        });
+      }
+    },
+
+    getUsersByLocation: async (req, res) => {
+      try {
+        const { location_id } = req.query;
+
+        if (!location_id) {
+          return res.status(400).json({
+            message: "กรุณาระบุ location_id",
+          });
+        }
+
+        console.log("🔍 Fetching users for location_id:", location_id);
+
+        const users = await prisma.user.findMany({
+          where: {
+            location_id: parseInt(location_id),
+            deleted_at: null,
+          },
+          select: {
+            user_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            role_id: true,
+            Role: {
+              select: {
+                role_name: true,
+              },
+            },
+          },
+          orderBy: {
+            first_name: "asc",
+          },
+        });
+
+        console.log(
+          `✅ Found ${users.length} users for location_id: ${location_id}`,
+        );
+
+        res.status(200).json({
+          message: "ดึงข้อมูลผู้ใช้สำเร็จ",
+          users: users,
+        });
+      } catch (error) {
+        console.error("Get users by location error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+        });
+      }
+    },
+
+    getUsersByGroup: async (req, res) => {
+      try {
+        const { group_location_id } = req.query;
+
+        if (!group_location_id) {
+          return res.status(400).json({
+            message: "กรุณาระบุ group_location_id",
+          });
+        }
+
+        console.log(
+          "🔍 Fetching users for group_location_id:",
+          group_location_id,
+        );
+
+        const users = await prisma.user.findMany({
+          where: {
+            group_location_id: parseInt(group_location_id),
+            deleted_at: null,
+          },
+          select: {
+            user_id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+            role_id: true,
+            Role: {
+              select: {
+                role_name: true,
+              },
+            },
+          },
+          orderBy: {
+            first_name: "asc",
+          },
+        });
+
+        console.log(
+          `✅ Found ${users.length} users for group_location_id: ${group_location_id}`,
+        );
+
+        res.status(200).json({
+          message: "ดึงข้อมูลผู้ใช้สำเร็จ",
+          users: users,
+        });
+      } catch (error) {
+        console.error("Get users by group error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
         });
       }
     },

@@ -202,8 +202,8 @@ export default function UsersPage() {
 
   // ✅ Handler เมื่อเปลี่ยน group location ในฟอร์มแก้ไข
   const handleEditGroupLocationChange = (groupLocationId: string) => {
-    setEditForm({ 
-      ...editForm, 
+    setEditForm({
+      ...editForm,
       group_location_id: groupLocationId,
       location_id: "" // reset location เมื่อเปลี่ยน group
     });
@@ -413,7 +413,7 @@ export default function UsersPage() {
       const response = await apiClient.post('/userLockerGrant/createUserLockerGrant', {
         user_id: grantForm.user_id,
         granted_by: grantForm.granted_by,
-        permission_withdraw: grantForm.permission_withdraw, 
+        permission_withdraw: grantForm.permission_withdraw,
         permission_restock: grantForm.permission_restock,
         locker_id: parseInt(grantForm.locker_id),
         location_id: parseInt(grantForm.location_id),
@@ -521,14 +521,14 @@ export default function UsersPage() {
 
     // Organize Admin (2) - เห็นเฉพาะ grants ใน group_location_id เดียวกัน
     if (currentUser.role === 2 && currentUser.groupLocationId) {
-      return grants.filter(grant => 
+      return grants.filter(grant =>
         grant.location_id === currentUser.locationId
       );
     }
 
     // Department Admin (3) - เห็นเฉพาะ grants ใน location_id เดียวกัน
     if (currentUser.role === 3 && currentUser.locationId) {
-      return grants.filter(grant => 
+      return grants.filter(grant =>
         grant.location_id === currentUser.locationId
       );
     }
@@ -574,10 +574,13 @@ export default function UsersPage() {
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
           <TabsTrigger value="users">จัดการผู้ใช้</TabsTrigger>
-          <TabsTrigger value="grants">
-            <Shield className="h-4 w-4 mr-2" />
-            การให้สิทธิ์
-          </TabsTrigger>
+          {currentUser.role === 1 || currentUser.role === 3 ? (
+            <TabsTrigger value="grants">
+              <Shield className="h-4 w-4 mr-2" />
+              การให้สิทธิ์
+            </TabsTrigger>
+          ) : null}
+
         </TabsList>
 
         {/* Tab 1: User Management */}
@@ -1178,10 +1181,10 @@ export default function UsersPage() {
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !grantForm.location_id 
-                        ? "เลือกสถานที่ก่อน" 
-                        : filteredLockers.length === 0 
-                          ? "ไม่มีล็อกเกอร์ที่ activated" 
+                      !grantForm.location_id
+                        ? "เลือกสถานที่ก่อน"
+                        : filteredLockers.length === 0
+                          ? "ไม่มีล็อกเกอร์ที่ activated"
                           : "เลือกล็อกเกอร์"
                     } />
                   </SelectTrigger>
@@ -1215,7 +1218,7 @@ export default function UsersPage() {
                 <Switch
                   checked={grantForm.permission_withdraw === 1}
                   onCheckedChange={(checked: boolean) =>
-                    setGrantForm({ ...grantForm, permission_withdraw: checked ? 1 : 0})
+                    setGrantForm({ ...grantForm, permission_withdraw: checked ? 1 : 0 })
                   }
                 />
               </div>
@@ -1227,7 +1230,7 @@ export default function UsersPage() {
                 <Switch
                   checked={grantForm.permission_restock === 1}
                   onCheckedChange={(checked: boolean) =>
-                    setGrantForm({ ...grantForm, permission_restock: checked ? 1 : 0} )
+                    setGrantForm({ ...grantForm, permission_restock: checked ? 1 : 0 })
                   }
                 />
               </div>
@@ -1339,10 +1342,10 @@ export default function UsersPage() {
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !grantForm.location_id 
-                        ? "เลือกสถานที่ก่อน" 
-                        : filteredLockers.length === 0 
-                          ? "ไม่มีล็อกเกอร์ที่ activated" 
+                      !grantForm.location_id
+                        ? "เลือกสถานที่ก่อน"
+                        : filteredLockers.length === 0
+                          ? "ไม่มีล็อกเกอร์ที่ activated"
                           : "เลือกล็อกเกอร์"
                     } />
                   </SelectTrigger>
