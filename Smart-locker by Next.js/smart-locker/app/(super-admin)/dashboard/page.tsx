@@ -224,14 +224,14 @@ export default function DashboardPage() {
   }
 
   const getActivityBadge = (activity: string) => {
-    return activity === "เบิกยา" 
+    return activity === "เบิกยา" || activity === "dispense"
       ? <Badge variant="default" className="bg-blue-600">เบิกยา</Badge> 
       : <Badge variant="secondary" className="bg-purple-600 text-white">เติมยา</Badge>
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'สำเร็จ':
+      case 'สำเร็จ' :
         return <Badge className="bg-green-100 text-green-800">สำเร็จ</Badge>
       case 'รอดำเนินการ':
         return <Badge className="bg-yellow-100 text-yellow-800">รอดำเนินการ</Badge>

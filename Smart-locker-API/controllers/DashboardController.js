@@ -136,14 +136,14 @@ module.exports = {
 
           const dayWithdraw = await countTransactionsWithUsers(userIds, {
             created_at: { gte: dayStart, lte: dayEnd },
-            activity: 'เบิกยา',
-            status: 'สำเร็จ'
+            activity: { in: ["เบิกยา", "dispense"] },
+            status: { in: ["สำเร็จ", "success"] },
           });
 
           const dayRestock = await countTransactionsWithUsers(userIds, {
             created_at: { gte: dayStart, lte: dayEnd },
-            activity: 'เติมยา',
-            status: 'สำเร็จ'
+            activity: { in: ["เติมยา", "restock"] },
+            status: { in: ["สำเร็จ", "success"] }
           });
 
           dailyChartData.push({
@@ -165,14 +165,14 @@ module.exports = {
 
           const monthWithdraw = await countTransactionsWithUsers(userIds, {
             created_at: { gte: monthStart, lte: monthEnd },
-            activity: 'เบิกยา',
-            status: 'สำเร็จ'
+            activity: { in: ["เบิกยา", "dispense"] },
+            status: { in: ["สำเร็จ", "success"] }
           });
 
           const monthRestock = await countTransactionsWithUsers(userIds, {
             created_at: { gte: monthStart, lte: monthEnd },
-            activity: 'เติมยา',
-            status: 'สำเร็จ'
+            activity: 'เติมยา' || 'restock',
+            status: 'สำเร็จ' || 'success'
           });
 
           monthlyChartData.push({
@@ -193,14 +193,14 @@ module.exports = {
 
           const yearWithdraw = await countTransactionsWithUsers(userIds, {
             created_at: { gte: yearStart, lte: yearEnd },
-            activity: 'เบิกยา',
-            status: 'สำเร็จ'
+            activity: { in: ["เบิกยา", "dispense"] },
+            status: { in: ["สำเร็จ", "success"] }
           });
 
           const yearRestock = await countTransactionsWithUsers(userIds, {
             created_at: { gte: yearStart, lte: yearEnd },
-            activity: 'เติมยา',
-            status: 'สำเร็จ'
+            activity: { in: ["เติมยา", "restock"] },
+            status: { in: ["สำเร็จ", "success"] }
           });
 
           yearlyChartData.push({
@@ -391,8 +391,8 @@ module.exports = {
         const todayWithdraw = await prisma.transaction.count({
           where: {
             created_at: { gte: startOfToday, lte: endOfToday },
-            activity: 'เบิกยา',
-            status: 'สำเร็จ',
+            activity: { in: ["เบิกยา", "dispense"] },
+            status: { in: ["สำเร็จ", "success"] },
             deleted_at: null,
             user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
           }
@@ -401,8 +401,8 @@ module.exports = {
         const todayRestock = await prisma.transaction.count({
           where: {
             created_at: { gte: startOfToday, lte: endOfToday },
-            activity: 'เติมยา',
-            status: 'สำเร็จ',
+            activity: { in: ["เติมยา", "restock"] },
+            status: { in: ["สำเร็จ", "success"] },
             deleted_at: null,
             user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
           }
@@ -412,8 +412,8 @@ module.exports = {
         const monthWithdraw = await prisma.transaction.count({
           where: {
             created_at: { gte: startOfMonth },
-            activity: 'เบิกยา',
-            status: 'สำเร็จ',
+            activity: { in: ["เบิกยา", "dispense"] },
+            status: { in: ["สำเร็จ", "success"] },
             deleted_at: null,
             user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
           }
@@ -422,8 +422,8 @@ module.exports = {
         const monthRestock = await prisma.transaction.count({
           where: {
             created_at: { gte: startOfMonth },
-            activity: 'เติมยา',
-            status: 'สำเร็จ',
+            activity: { in: ["เติมยา", "restock"] },
+            status: { in: ["สำเร็จ", "success"] },
             deleted_at: null,
             user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
           }
@@ -433,8 +433,8 @@ module.exports = {
         const yearWithdraw = await prisma.transaction.count({
           where: {
             created_at: { gte: startOfYear },
-            activity: 'เบิกยา',
-            status: 'สำเร็จ',
+            activity: { in: ["เบิกยา", "dispense"] },
+            status: { in: ["สำเร็จ", "success"] },
             deleted_at: null,
             user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
           }
@@ -443,8 +443,8 @@ module.exports = {
         const yearRestock = await prisma.transaction.count({
           where: {
             created_at: { gte: startOfYear },
-            activity: 'เติมยา',
-            status: 'สำเร็จ',
+            activity: { in: ["เติมยา", "restock"] },
+            status: { in: ["สำเร็จ", "success"] },
             deleted_at: null,
             user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
           }
@@ -463,8 +463,8 @@ module.exports = {
           const dayWithdraw = await prisma.transaction.count({
             where: {
               created_at: { gte: dayStart, lte: dayEnd },
-              activity: 'เบิกยา',
-              status: 'สำเร็จ',
+              activity: { in: ["เบิกยา", "dispense"] },
+              status: { in: ["สำเร็จ", "success"] },
               deleted_at: null,
               user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
             }
@@ -473,8 +473,8 @@ module.exports = {
           const dayRestock = await prisma.transaction.count({
             where: {
               created_at: { gte: dayStart, lte: dayEnd },
-              activity: 'เติมยา',
-              status: 'สำเร็จ',
+              activity: 'เติมยา' || 'restock',
+              status: 'สำเร็จ' || 'success',
               deleted_at: null,
               user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
             }
@@ -500,8 +500,8 @@ module.exports = {
           const monthWithdrawCount = await prisma.transaction.count({
             where: {
               created_at: { gte: monthStart, lte: monthEnd },
-              activity: 'เบิกยา',
-              status: 'สำเร็จ',
+              activity: { in: ["เบิกยา", "dispense"] },
+              status: { in: ["สำเร็จ", "success"] },
               deleted_at: null,
               user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
             }
@@ -510,8 +510,8 @@ module.exports = {
           const monthRestockCount = await prisma.transaction.count({
             where: {
               created_at: { gte: monthStart, lte: monthEnd },
-              activity: 'เติมยา',
-              status: 'สำเร็จ',
+              activity: { in: ["เติมยา", "restock"] },
+              status: { in: ["สำเร็จ", "success"] },
               deleted_at: null,
               user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
             }
@@ -536,8 +536,8 @@ module.exports = {
           const yearWithdrawCount = await prisma.transaction.count({
             where: {
               created_at: { gte: yearStart, lte: yearEnd },
-              activity: 'เบิกยา',
-              status: 'สำเร็จ',
+              activity: { in: ["เบิกยา", "dispense"] },
+              status: { in: ["สำเร็จ", "success"] },
               deleted_at: null,
               user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
             }
@@ -546,8 +546,8 @@ module.exports = {
           const yearRestockCount = await prisma.transaction.count({
             where: {
               created_at: { gte: yearStart, lte: yearEnd },
-              activity: 'เติมยา',
-              status: 'สำเร็จ',
+              activity: { in: ["เติมยา", "restock"] },
+              status: { in: ["สำเร็จ", "success"] },
               deleted_at: null,
               user_id: { in: userIds.length > 0 ? userIds : [emptyUUID] }
             }
