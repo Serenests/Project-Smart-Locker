@@ -2,7 +2,7 @@
 'use client'
 import { useEffect, useState } from "react";
 import { authService, logout } from "@/lib/auth";
-import { Users, Package, Lock, MapPin, History, BarChart3, Shield, Camera } from "lucide-react"
+import { Users, Package, Lock, MapPin, History, BarChart3, Shield, Camera, ClipboardPenLine } from "lucide-react"
 import Link from "next/link"
 import {
   Sidebar,SidebarContent,SidebarFooter,SidebarGroup,SidebarGroupContent,SidebarGroupLabel,SidebarHeader,
@@ -61,6 +61,13 @@ export function DashboardSidebar() {
             title: "จัดการยา",
             url: "/product-management",
             icon: Package,
+            description: "รายการยาและสต็อก",
+            visible: canShowProductManagement(),
+          },
+          {
+            title: "ออกใบทำรายการ",
+            url: "/order",
+            icon: ClipboardPenLine,
             description: "รายการยาและสต็อก",
             visible: canShowProductManagement(),
           },

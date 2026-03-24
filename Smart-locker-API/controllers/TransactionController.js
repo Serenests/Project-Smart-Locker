@@ -1,15 +1,13 @@
 //Smart-locker-API/controllers/TransactionController.js
-const { PrismaClient } = require('@prisma/client');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const { get } = require('http');
-const { create } = require('domain');
-require('dotenv').config();
+const { PrismaClient } = require("@prisma/client");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+const { get } = require("http");
+const { create } = require("domain");
+require("dotenv").config();
 
-const prisma = require('../lib/prisma');
-
-
+const prisma = require("../lib/prisma");
 
 module.exports = {
   TransactionController: {
@@ -60,7 +58,6 @@ module.exports = {
     //ลบ Transaction
     deleteTransaction: async (req, res) => {
       try {
-
         const { transaction_id } = req.body;
 
         if (!transaction_id) {
@@ -101,18 +98,15 @@ module.exports = {
         });
 
         return res.status(200).json({
-          message: "ลบธุรกรรมสำเร็จ"
+          message: "ลบธุรกรรมสำเร็จ",
         });
-
       } catch (error) {
-
         console.error(error);
 
         return res.status(500).json({
           message: "เกิดข้อผิดพลาด",
-          error: error.message
+          error: error.message,
         });
-
       }
     },
 
@@ -207,6 +201,9 @@ module.exports = {
               select: {
                 amount: true,
                 slot_id: true,
+                camera_amount: true,
+                is_discrepancy: true,
+
                 Slot_stock: {
                   select: {
                     lot_id: true,
@@ -243,6 +240,8 @@ module.exports = {
             lot_id: detail.Slot_stock?.lot_id || "ไม่ระบุ",
             slot_id: detail.slot_id,
             amount: detail.amount,
+            camera_amount: detail.camera_amount,
+            is_discrepancy: detail.is_discrepancy,
             current_stock: detail.Slot_stock?.amount || 0,
           })),
         }));
@@ -301,16 +300,60 @@ module.exports = {
                 },
               },
             },
+            Transaction_detail: {
+              select: {
+                amount: true,
+                slot_id: true,
+                camera_amount: true,
+                is_discrepancy: true,
+                Slot_stock: {
+                  select: {
+                    lot_id: true,
+                    amount: true,
+                    Product: {
+                      select: {
+                        product_id: true,
+                        product_name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         });
 
-        if (!transaction) {
+        if (!transaction || transaction.length === 0) {
           return res.status(404).json({
             message: "ไม่พบธุรกรรม",
           });
         }
 
-        res.status(200).json(transaction);
+        const formattedTransaction = transaction.map((t) => ({
+          transaction_id: t.transaction_id,
+          user_id: t.user_id,
+          first_name: t.User?.first_name || "ไม่ระบุ",
+          last_name: t.User?.last_name || "ไม่ระบุ",
+          activity: t.activity,
+          status: t.status,
+          created_at: t.created_at,
+          User: t.User,
+          items: t.Transaction_detail.map((detail) => ({
+            product_id: detail.Slot_stock?.Product?.product_id || "ไม่ระบุ",
+            product_name: detail.Slot_stock?.Product?.product_name || "ไม่ระบุ",
+            lot_id: detail.Slot_stock?.lot_id || "ไม่ระบุ",
+            slot_id: detail.slot_id,
+            amount: detail.amount,
+            camera_amount: detail.camera_amount,
+            is_discrepancy: detail.is_discrepancy,
+            current_stock: detail.Slot_stock?.amount || 0,
+          })),
+        }));
+
+        res.status(200).json({
+          message: "ดึงข้อมูลธุรกรรมสำเร็จ",
+          transaction: formattedTransaction[0],
+        });
       } catch (error) {
         console.error("Get transaction by id error:", error);
         res.status(500).json({
@@ -387,6 +430,26 @@ module.exports = {
                 },
               },
             },
+            Transaction_detail: {
+              select: {
+                amount: true,
+                slot_id: true,
+                camera_amount: true,
+                is_discrepancy: true,
+                Slot_stock: {
+                  select: {
+                    lot_id: true,
+                    amount: true,
+                    Product: {
+                      select: {
+                        product_id: true,
+                        product_name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           orderBy: {
             created_at: "desc",
@@ -397,9 +460,30 @@ module.exports = {
           `✅ Found ${transactions.length} transactions for group_location_id: ${group_location_id}`,
         );
 
+        const formattedTransactions = transactions.map((transaction) => ({
+          transaction_id: transaction.transaction_id,
+          user_id: transaction.user_id,
+          first_name: transaction.User?.first_name || "ไม่ระบุ",
+          last_name: transaction.User?.last_name || "ไม่ระบุ",
+          activity: transaction.activity,
+          status: transaction.status,
+          created_at: transaction.created_at,
+          User: transaction.User,
+          items: transaction.Transaction_detail.map((detail) => ({
+            product_id: detail.Slot_stock?.Product?.product_id || "ไม่ระบุ",
+            product_name: detail.Slot_stock?.Product?.product_name || "ไม่ระบุ",
+            lot_id: detail.Slot_stock?.lot_id || "ไม่ระบุ",
+            slot_id: detail.slot_id,
+            amount: detail.amount,
+            camera_amount: detail.camera_amount,
+            is_discrepancy: detail.is_discrepancy,
+            current_stock: detail.Slot_stock?.amount || 0,
+          })),
+        }));
+
         res.status(200).json({
           message: "ดึงข้อมูลธุรกรรมสำเร็จ",
-          transactions: transactions,
+          transactions: formattedTransactions,
         });
       } catch (error) {
         console.error("Get transactions by group error:", error);
@@ -474,6 +558,26 @@ module.exports = {
                 },
               },
             },
+            Transaction_detail: {
+              select: {
+                amount: true,
+                slot_id: true,
+                camera_amount: true,
+                is_discrepancy: true,
+                Slot_stock: {
+                  select: {
+                    lot_id: true,
+                    amount: true,
+                    Product: {
+                      select: {
+                        product_id: true,
+                        product_name: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           orderBy: {
             created_at: "desc",
@@ -484,9 +588,30 @@ module.exports = {
           `✅ Found ${transactions.length} transactions for location_id: ${location_id}`,
         );
 
+        const formattedTransactions = transactions.map((transaction) => ({
+          transaction_id: transaction.transaction_id,
+          user_id: transaction.user_id,
+          first_name: transaction.User?.first_name || "ไม่ระบุ",
+          last_name: transaction.User?.last_name || "ไม่ระบุ",
+          activity: transaction.activity,
+          status: transaction.status,
+          created_at: transaction.created_at,
+          User: transaction.User,
+          items: transaction.Transaction_detail.map((detail) => ({
+            product_id: detail.Slot_stock?.Product?.product_id || "ไม่ระบุ",
+            product_name: detail.Slot_stock?.Product?.product_name || "ไม่ระบุ",
+            lot_id: detail.Slot_stock?.lot_id || "ไม่ระบุ",
+            slot_id: detail.slot_id,
+            amount: detail.amount,
+            camera_amount: detail.camera_amount,
+            is_discrepancy: detail.is_discrepancy,
+            current_stock: detail.Slot_stock?.amount || 0,
+          })),
+        }));
+
         res.status(200).json({
           message: "ดึงข้อมูลธุรกรรมสำเร็จ",
-          transactions: transactions,
+          transactions: formattedTransactions,
         });
       } catch (error) {
         console.error("Get transactions by location error:", error);
@@ -800,7 +925,7 @@ module.exports = {
         };
 
         //ดึงข้อมูล Location Info
-        
+
         let locationInfo = {
           location_name: "ทั้งหมด",
           group_location_name: "ทั้งหมด",
@@ -826,7 +951,6 @@ module.exports = {
               groupLocation.group_location_name || "ไม่ระบุ";
           }
         }
-        
 
         // ✅ ดึงข้อมูล User/Product ที่ถูก filter (สำหรับแสดงใน report)
         let filterInfo = {

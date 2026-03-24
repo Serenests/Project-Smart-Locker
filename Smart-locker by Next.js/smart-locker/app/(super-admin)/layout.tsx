@@ -1,7 +1,7 @@
 // app/dashboard/layout.tsx
 'use client'
 
-import { Shield, Database, User, LogOut } from "lucide-react";
+import { Shield, Database, User, LogOut,Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DashboardSidebar } from "./sidebar";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
@@ -76,10 +76,6 @@ export default function DashboardLayout({ children }: {
                 </div>
                 
                 <div className="flex items-center space-x-3">
-                  <Badge variant="outline" className="text-green-600 border-green-600">
-                    <Database className="h-3 w-3 mr-1" />
-                    ระบบออนไลน์
-                  </Badge>
                   
                   {/* ✅ แสดงข้อมูล user จริง */}
                   {currentUser ? (
@@ -93,6 +89,8 @@ export default function DashboardLayout({ children }: {
                         </p>
                         
                       </div>
+                      
+                      <Bell className="h-5 w-5 text-gray-400" />
                       
                       {/* ✅ ปุ่ม Logout */}
                       <Button 

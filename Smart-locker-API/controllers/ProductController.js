@@ -8,7 +8,20 @@ require('dotenv').config();
 
 const prisma = require('../lib/prisma');
 
+const { publishProductUpsert } = require("../utils/lockerMqttEvents");
 
+async function getAllActivatedLockerIds(prisma) {
+  const lockers = await prisma.locker.findMany({
+    where: {
+      deleted_at: null,
+    },
+    select: {
+      locker_id: true,
+    },
+  });
+
+  return lockers.map((locker) => String(locker.locker_id));
+}
 
 module.exports = {
     ProductController: {
@@ -58,6 +71,23 @@ module.exports = {
                     }
                 });
 
+                const lockerIdList = await getAllActivatedLockerIds(prisma);
+
+                await publishProductUpsert(
+                  {
+                    product_id: newProduct.product_id,
+                    product_name: newProduct.product_name,
+                    product_detail: newProduct.product_detail,
+                    created_at:
+                      newProduct.created_at?.toISOString?.() ||
+                      new Date().toISOString(),
+                    updated_at:
+                      newProduct.updated_at?.toISOString?.() ||
+                      new Date().toISOString(),
+                    deleted_at: null,
+                  },
+                  lockerIdList,
+                );
 
                 res.status(201).json({ 
                     message: 'สร้าง Product สำเร็จ',
@@ -107,6 +137,21 @@ module.exports = {
                         product_id: product_id
                     }
                 });
+
+                const lockerIdList = await getAllActivatedLockerIds(prisma);
+
+                await publishProductUpsert(
+                  {
+                    product_id: existingProduct.product_id,
+                    product_name: existingProduct.product_name,
+                    product_detail: existingProduct.product_detail,
+                    created_at:
+                      existingProduct.created_at?.toISOString?.() || null,
+                    updated_at: new Date().toISOString(),
+                    deleted_at: new Date().toISOString(),
+                  },
+                  lockerIdList,
+                );
 
                 res.status(200).json({ 
                     message: 'ลบผลิตภัณฑ์สำเร็จ'
@@ -168,6 +213,24 @@ module.exports = {
                     where: { product_id: product_id },
                     data: updateData
                 })
+
+                const lockerIdList = await getAllActivatedLockerIds(prisma);
+
+                await publishProductUpsert(
+                  {
+                    product_id: updatedProduct.product_id,
+                    product_name: updatedProduct.product_name,
+                    product_detail: updatedProduct.product_detail,
+                    created_at:
+                      updatedProduct.created_at?.toISOString?.() || null,
+                    updated_at:
+                      updatedProduct.updated_at?.toISOString?.() ||
+                      new Date().toISOString(),
+                    deleted_at:
+                      updatedProduct.deleted_at?.toISOString?.() || null,
+                  },
+                  lockerIdList,
+                );
 
                 res.status(200).json({ 
                     message: 'แก้ไขข้อมูลผลิตภัณฑ์สำเร็จ',

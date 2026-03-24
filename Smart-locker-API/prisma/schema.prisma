@@ -48,7 +48,7 @@ model Locker {
   location_id            Int
   locker_location_detail String?             @db.VarChar(100)
   locker_status          Boolean             @default(false)
-  api_token              String?             
+  api_token              String?
   created_at             DateTime?           @default(now()) @db.Timestamp(6)
   updated_at             DateTime?           @db.Timestamp(6)
   deleted_at             DateTime?           @db.Timestamp(6)
@@ -146,6 +146,8 @@ model Transaction_detail {
   slot_stock_id         Int
   slot_id               Int
   amount                Int?
+  camera_amount         Int?
+  is_discrepancy        Boolean?    @default(false)
   created_at            DateTime?   @default(now()) @db.Timestamp(6)
   updated_at            DateTime?   @db.Timestamp(6)
   deleted_at            DateTime?   @db.Timestamp(6)
@@ -209,4 +211,19 @@ model Locker_Provision {
   deleted_at     DateTime? @db.Timestamp(6)
 
   Locker Locker @relation(fields: [locker_id], references: [locker_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_provision_locker")
+}
+
+model qr_task {
+  task_id          String    @id
+  locker_id        Int
+  task_type        String
+  assigned_user_id String
+  qr_token         String    @unique
+  items_json       Json      @default("[]")
+  status           String    @default("pending")
+  expires_at       DateTime?
+  used_at          DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime?
+  deleted_at       DateTime?
 }

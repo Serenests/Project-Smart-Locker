@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable'
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { ChartColumn, SquareUserRound, UserRound, MapPin, Clock3 } from 'lucide-react';
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -34,6 +35,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Search, Plus, Edit, Trash2, Eye, AlertTriangle, ShoppingCart, CheckCircle, XCircle, Package, FileText, Download } from "lucide-react"
+import { TriangleAlert } from "lucide-react"
 import { authService, apiClient } from "@/lib/auth"
 import { ChevronRight, ChevronDown } from "lucide-react"
 
@@ -56,6 +58,8 @@ interface TransactionDetail {
   slot_stock_id: number
   slot_id: number
   amount: number
+  camera_amount?: number
+  is_discrepancy?: boolean
   created_at: string
   Transaction: {
     transaction_id: number
@@ -1042,7 +1046,9 @@ export default function TransactionDetailTestPage() {
     csvContent += 'รายงานสรุปการเบิก-เติมยา\n'
     csvContent += `สถานที่,${reportData.location_name}\n`
     csvContent += `กลุ่มสถานที่,${reportData.group_location_name}\n`
-    csvContent += `ช่วงเวลา,${formatDate(reportData.start_date)} - ${formatDate(reportData.end_date)}\n`
+    const startLabel = reportData.start_date ? formatDate(reportData.start_date) : 'ทั้งหมด'
+    const endLabel = reportData.end_date ? formatDate(reportData.end_date) : 'ทั้งหมด'
+    csvContent += `ช่วงเวลา,${startLabel} - ${endLabel}\n`
     csvContent += `ผู้ออกรีพอร์ต,${reporterName}\n`
     csvContent += `วันที่ออกรีพอร์ต,${generatedDate}\n`
 
@@ -1117,8 +1123,8 @@ export default function TransactionDetailTestPage() {
     const BOM = '\uFEFF'
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
 
-    const startDateFormatted = reportData.start_date.replace(/-/g, '')
-    const endDateFormatted = reportData.end_date.replace(/-/g, '')
+    const startDateFormatted = reportData.start_date?.replace(/-/g, '') || 'all'
+    const endDateFormatted = reportData.end_date?.replace(/-/g, '') || 'all'
 
     let filename = `รายงานยา_${reportData.location_name}_${startDateFormatted}-${endDateFormatted}`
 
@@ -1206,12 +1212,10 @@ export default function TransactionDetailTestPage() {
 
     // Period
     doc.setFontSize(11)
-    doc.text(
-      `ช่วงเวลา: ${formatDateThai(reportData.start_date)} - ${formatDateThai(reportData.end_date)}`,
-      pageWidth / 2,
-      40,
-      { align: 'center' }
-    )
+    const periodText = (reportData.start_date && reportData.end_date)
+      ? `ช่วงเวลา: ${formatDateThai(reportData.start_date)} - ${formatDateThai(reportData.end_date)}`
+      : 'ช่วงเวลา: ทั้งหมด'
+    doc.text(periodText, pageWidth / 2, 40, { align: 'center' })
 
     // ========================================
     // INFO SECTION
@@ -1588,8 +1592,8 @@ export default function TransactionDetailTestPage() {
     // ========================================
     // SAVE PDF
     // ========================================
-    const startDateFormatted = reportData.start_date.replace(/-/g, '')
-    const endDateFormatted = reportData.end_date.replace(/-/g, '')
+    const startDateFormatted = reportData.start_date?.replace(/-/g, '') || 'all'
+    const endDateFormatted = reportData.end_date?.replace(/-/g, '') || 'all'
 
     let filename = `รายงานยา_${reportData.location_name.replace(/\s+/g, '_')}_${startDateFormatted}-${endDateFormatted}`
 
@@ -1870,6 +1874,10 @@ export default function TransactionDetailTestPage() {
                                     )}
                                   </Button>
                                   {transaction.transaction_id}
+                                  {/* ✅ แสดง TriangleAlert ถ้ามี item ที่ is_discrepancy = true */}
+                                  {transaction.items && transaction.items.some((item: any) => item.is_discrepancy) && (
+                                    <TriangleAlert className="w-4 h-4 text-yellow-500" />
+                                  )}
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -1937,13 +1945,21 @@ export default function TransactionDetailTestPage() {
                                                   <TableHead>Lot ID</TableHead>
                                                   <TableHead>Slot</TableHead>
                                                   <TableHead className="text-right">จำนวน</TableHead>
+                                                  <TableHead className="text-right">จำนวนจากกล้อง</TableHead>
                                                   <TableHead className="text-right">คงเหลือ</TableHead>
                                                 </TableRow>
                                               </TableHeader>
                                               <TableBody>
                                                 {transactionItems.map((item: any, index: number) => (
-                                                  <TableRow key={index} className="bg-white">
-                                                    <TableCell className="font-medium">{index + 1}</TableCell>
+                                                  <TableRow key={index} className={`bg-white ${item.is_discrepancy ? 'border-l-4 border-l-yellow-500' : ''}`}>
+                                                    <TableCell className="font-medium">
+                                                      <div className="flex items-center gap-2">
+                                                        {index + 1}
+                                                        {item.is_discrepancy && (
+                                                          <TriangleAlert className="w-4 h-4 text-yellow-500" />
+                                                        )}
+                                                      </div>
+                                                    </TableCell>
                                                     <TableCell>
                                                       <div>
                                                         <p className="font-semibold">{item.Product?.product_name || 'N/A'}</p>
@@ -1963,6 +1979,11 @@ export default function TransactionDetailTestPage() {
                                                       >
                                                         {item.amount}
                                                       </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                      <span className="text-sm font-medium text-gray-600">
+                                                        {item.camera_amount || '0'}
+                                                      </span>
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                       <span className="text-sm font-medium text-gray-600">
@@ -2305,22 +2326,16 @@ export default function TransactionDetailTestPage() {
           </DialogHeader>
 
           {selectedTransaction && selectedTransaction.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Transaction Information */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">ข้อมูลการทำรายการ</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-3">
+                <CardContent className="grid grid-cols-4 gap-2">
                   <div>
                     <p className="text-sm text-gray-500">Transaction ID</p>
                     <p className="font-semibold">{selectedTransaction[0].Transaction.transaction_id}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">กิจกรรม</p>
-                    <Badge variant={selectedTransaction[0].Transaction.activity === 'เบิกยา' ? 'destructive' : 'default'}>
-                      {selectedTransaction[0].Transaction.activity}
-                    </Badge>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">ผู้ทำรายการ</p>
@@ -2328,6 +2343,21 @@ export default function TransactionDetailTestPage() {
                       {selectedTransaction[0].Transaction.User.first_name} {selectedTransaction[0].Transaction.User.last_name}
                     </p>
                   </div>
+                  <div>
+                    <p className="text-sm text-gray-500">กิจกรรม</p>
+                    <Badge
+                      className={
+                        selectedTransaction[0].Transaction.activity === 'restock'
+                          ? 'bg-green-500 text-white hover:bg-green-600'
+                          : selectedTransaction[0].Transaction.activity === 'dispense'
+                            ? 'bg-orange-500 text-white hover:bg-orange-600'
+                            : ''
+                      }
+                    >
+                      {selectedTransaction[0].Transaction.activity}
+                    </Badge>
+                  </div>
+
                   <div>
                     <p className="text-sm text-gray-500">สถานะ</p>
                     <Badge
@@ -2354,7 +2384,7 @@ export default function TransactionDetailTestPage() {
                     </p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-sm text-gray-500">วันที่สร้าง</p>
+                    <p className="text-sm text-gray-500">วันที่ทำรายการ</p>
                     <p className="font-semibold">
                       {new Date(selectedTransaction[0].created_at).toLocaleString('th-TH')}
                     </p>
@@ -2381,13 +2411,21 @@ export default function TransactionDetailTestPage() {
                           <TableHead>ตำแหน่งตู้</TableHead>
                           <TableHead>สถานที่</TableHead>
                           <TableHead className="text-right" >จำนวน</TableHead>
+                          <TableHead className="text-right">Camera</TableHead>
                           <TableHead className="text-right">คงเหลือ</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {selectedTransaction.map((detail, index) => (
-                          <TableRow key={detail.transaction_detail_id}>
-                            <TableCell className="font-medium">{index + 1}</TableCell>
+                          <TableRow key={detail.transaction_detail_id} className={detail.is_discrepancy ? 'border-l-4 border-l-yellow-500' : ''}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {index + 1}
+                                {detail.is_discrepancy && (
+                                  <TriangleAlert className="w-4 h-4 text-yellow-500" />
+                                )}
+                              </div>
+                            </TableCell>
                             <TableCell>
                               <div>
                                 <p className="font-semibold">{detail.Product.product_name}</p>
@@ -2428,6 +2466,11 @@ export default function TransactionDetailTestPage() {
                               >
                                 {detail.amount}
                               </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-sm font-medium text-gray-600">
+                                {detail.camera_amount || '0'}
+                              </span>
                             </TableCell>
                             <TableCell className="text-right">
                               <span className="text-sm font-medium text-gray-600">
@@ -2860,11 +2903,10 @@ export default function TransactionDetailTestPage() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">ช่วงเวลา</p>
-                      <p className="font-semibold text-gray-900">
-                        {new Date(reportData.start_date).toLocaleDateString('th-TH', { dateStyle: 'medium' })}
-                        {' - '}
-                        {new Date(reportData.end_date).toLocaleDateString('th-TH', { dateStyle: 'medium' })}
-                      </p>
+                      {reportData.start_date && reportData.end_date
+                        ? `${new Date(reportData.start_date).toLocaleDateString('th-TH', { dateStyle: 'medium' })} - ${new Date(reportData.end_date).toLocaleDateString('th-TH', { dateStyle: 'medium' })}`
+                        : 'ทั้งหมด'
+                      }
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">ผู้ออกรีพอร์ต</p>
@@ -2881,7 +2923,8 @@ export default function TransactionDetailTestPage() {
                       <div className="flex gap-2 flex-wrap">
                         {reportData.filters?.user_names?.map((name, idx) => (
                           <Badge key={idx} className="bg-blue-600">
-                            👤 {name}
+                            <SquareUserRound className="w-4 h-4 mr-2" />
+                            {name}
                           </Badge>
                         ))}
 
@@ -2891,7 +2934,7 @@ export default function TransactionDetailTestPage() {
                       <div className="flex gap-2 flex-wrap">
                         {reportData.filters?.product_names?.map((name, idx) => (
                           <Badge key={idx} className="bg-green-600">
-                            💊 {name}
+                            {name}
                           </Badge>
                         ))}
                       </div>
@@ -2909,7 +2952,8 @@ export default function TransactionDetailTestPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-xl flex items-center gap-2">
-                        📊 สรุปรวมตามยา
+                        <ChartColumn className="w-5 h-5" />
+                        สรุปรวมตามยา
                       </CardTitle>
                       <p className="text-sm text-gray-500 mt-1">
                         แสดงยอดรวมการเบิก-เติมของแต่ละยา ({reportData.summary_items?.length || 0} รายการ)
@@ -2973,7 +3017,7 @@ export default function TransactionDetailTestPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-xl flex items-center gap-2">
-                        📋 รายละเอียดการทำรายการ
+                        <FileText className="w-5 h-5" /> รายละเอียดการทำรายการ
                       </CardTitle>
                       <p className="text-sm text-gray-500 mt-1">
                         แสดงรายละเอียดแต่ละครั้งของการทำรายการ ({reportData.detailed_transactions?.length || 0} รายการ)
@@ -3004,14 +3048,17 @@ export default function TransactionDetailTestPage() {
                                   </p>
                                 </div>
                                 <p className="text-sm text-gray-600">
-                                  👤 {transaction.user_name}
+                                  <UserRound className="w-4 h-4 mr-2 inline" />
+                                  {transaction.user_name}
                                   <span className="text-xs text-gray-400 ml-2">({transaction.user_role})</span>
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                  📍 {transaction.location_name} • {transaction.group_location_name}
+                                  <MapPin className="w-4 h-4 mr-2 inline text-red-500" />
+                                  {transaction.location_name} • {transaction.group_location_name}
                                 </p>
                                 <p className="text-xs text-gray-400">
-                                  🕒 {new Date(transaction.created_at).toLocaleString('th-TH')}
+                                  <Clock3 className="w-4 h-4 mr-2 inline text-gray-600" />
+                                  {new Date(transaction.created_at).toLocaleString('th-TH')}
                                 </p>
                               </div>
                               <div className="text-right space-y-2">
@@ -3039,12 +3086,20 @@ export default function TransactionDetailTestPage() {
                                   <TableHead>Lot ID</TableHead>
                                   <TableHead>ตำแหน่ง</TableHead>
                                   <TableHead className="text-right">จำนวน</TableHead>
+                                  <TableHead className="text-right">Camera</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {transaction.items.map((item: any, idx: number) => (
-                                  <TableRow key={idx} className="bg-white">
-                                    <TableCell className="text-gray-500">{idx + 1}</TableCell>
+                                  <TableRow key={idx} className={`bg-white ${item.is_discrepancy ? 'border-l-4 border-l-yellow-500' : ''}`}>
+                                    <TableCell className="text-gray-500">
+                                      <div className="flex items-center gap-2">
+                                        {idx + 1}
+                                        {item.is_discrepancy && (
+                                          <TriangleAlert className="w-4 h-4 text-yellow-500" />
+                                        )}
+                                      </div>
+                                    </TableCell>
                                     <TableCell>
                                       <div>
                                         <p className="font-semibold">{item.product_name}</p>
@@ -3072,6 +3127,11 @@ export default function TransactionDetailTestPage() {
                                       >
                                         {item.amount}
                                       </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <span className="text-sm font-medium text-gray-600">
+                                        {item.camera_amount || '0'}
+                                      </span>
                                     </TableCell>
                                   </TableRow>
                                 ))}

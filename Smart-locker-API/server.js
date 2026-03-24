@@ -22,6 +22,7 @@ const { TransactionController } = require('./controllers/TransactionController')
 const { TransactionDetailController } = require('./controllers/TransactionDetailController'); //transactiondetailcontroller
 const { SyncController } = require('./controllers/SyncController'); //synccontroller
 const { SnapshotController } = require('./controllers/SnapshotController'); //snapshotcontroller
+const { QrTaskController } = require("./controllers/QrTaskController");
 
 app.use(cors());
 app.use(express.json());
@@ -76,6 +77,8 @@ app.post('/locker/createLocker', authenticateToken, requireSystemAdmin, LockerCo
 app.post('/locker/updateLocker', authenticateToken, requireSystemAdmin, LockerController.editLocker); //Edit Locker route
 app.post('/locker/deleteLocker', authenticateToken, requireSystemAdmin, LockerController.deleteLocker); //Delete Locker route
 app.get('/locker/getAllLockers', authenticateToken, requireDepartmentAdmin, LockerController.getAllLockers); //Get All Locker route
+//getLockersActivate
+app.get('/locker/getLockersActivate', authenticateToken, requireDepartmentAdmin, LockerController.getLockersActivate); //Get Lockers Activate route
 app.get('/locker/getLockersByLocationId/:location_id', authenticateToken, requireDepartmentAdmin, LockerController.getLockersByLocationId); //Get Lockers by Location ID route
 app.get('/locker/getLockerByGroupLocationId/:group_location_id', authenticateToken, requireOrganizeAdmin, LockerController.getLockerByGroupLocationId);
 // ✅ เพิ่ม Route ใหม่สำหรับดึงเฉพาะ Locker ที่ activated
@@ -118,6 +121,35 @@ app.get('/transaction/getReportData', authenticateToken, requireDepartmentAdmin,
 
 //สำหรับสร้าง Transaction จาก Locker
 app.post('/transaction/createTransactionFromLocker', TransactionController.createTransactionFromLocker);
+
+app.post(
+  "/qrTask/create",
+  authenticateToken,
+  requireDepartmentAdmin,
+  QrTaskController.createQrTask,
+);
+app.post(
+  "/qrTask/cancel",
+  authenticateToken,
+  requireDepartmentAdmin,
+  QrTaskController.cancelQrTask,
+);
+app.get(
+  "/qrTask/getByLocker/:locker_id",
+  authenticateToken,
+  requireDepartmentAdmin,
+  QrTaskController.getQrTasksByLocker,
+);
+app.post(
+  "/qrTask/complete-from-locker",
+  LockerController.verifyLocker,
+  QrTaskController.completeFromLocker,
+);
+
+app.get("/qrTask/getQrTasksByUser", authenticateToken, QrTaskController.getQrTasksByUser);
+
+//getAllQrTasks
+
 
 //Trasaction_detail routes
 // Transaction Detail routes

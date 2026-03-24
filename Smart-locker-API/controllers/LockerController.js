@@ -176,6 +176,48 @@ module.exports = {
       }
     },
 
+    // ✅ แก้ไขแล้ว: เพิ่ม response, เปลี่ยน filter เป็น Locker_Provision.is_activated, include ที่จำเป็น
+    getLockersActivate: async (req, res) => {
+      try {
+        const lockers = await prisma.locker.findMany({
+          where: {
+            deleted_at: null,
+            Locker_Provision: {
+              is_activated: true,
+            },
+          },
+          include: {
+            Location: {
+              select: {
+                location_id: true,
+                location_name: true,
+                group_location_id: true,
+              },
+            },
+            Locker_Provision: {
+              select: {
+                provision_id: true,
+                provision_code: true,
+                is_activated: true,
+              },
+            },
+          },
+          orderBy: { created_at: "desc" },
+        });
+
+        return res.status(200).json({
+          message: "ดึงข้อมูลล็อกเกอร์ที่ activated สำเร็จ",
+          lockers,
+        });
+      } catch (error) {
+        console.error("getLockersActivate error:", error);
+        return res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+        });
+      }
+    },
+
     getLockersByLocationId: async (req, res) => {
       try {
         const { location_id } = req.params;

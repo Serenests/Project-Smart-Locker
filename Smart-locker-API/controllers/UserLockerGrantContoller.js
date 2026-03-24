@@ -8,6 +8,27 @@ require('dotenv').config();
 
 const prisma = require('../lib/prisma');
 
+const { publishUserGrantUpsert } = require("../utils/lockerMqttEvents");
+
+async function getUserForGrant(user_id) {
+  return prisma.user.findUnique({
+    where: {
+      user_id: user_id,
+    },
+    select: {
+      user_id: true,
+      email: true,
+      first_name: true,
+      last_name: true,
+      password: true,
+      citizen_id: true,
+      created_at: true,
+      updated_at: true,
+      deleted_at: true,
+    },
+  });
+}
+
 module.exports = {
     UserLockerGrantController: {
         createUserLockerGrant: async (req, res) => {
@@ -48,6 +69,33 @@ module.exports = {
                     }
                 });
 
+                const user = await getUserForGrant(userLockerGrant.user_id);
+
+                if (user) {
+                  await publishUserGrantUpsert(
+                    {
+                      locker_id: userLockerGrant.locker_id,
+                      permission_withdraw: userLockerGrant.permission_withdraw,
+                      permission_restock: userLockerGrant.permission_restock,
+                      updated_at:
+                        userLockerGrant.updated_at?.toISOString?.() ||
+                        new Date().toISOString(),
+                      deleted_at: userLockerGrant.deleted_at?.toISOString?.() || null,
+                    },
+                    {
+                      user_id: user.user_id,
+                      email: user.email,
+                      first_name: user.first_name,
+                      last_name: user.last_name,
+                      password: user.password,
+                      citizen_id: user.citizen_id,
+                      created_at: user.created_at?.toISOString?.() || null,
+                      updated_at: user.updated_at?.toISOString?.() || null,
+                      deleted_at: user.deleted_at?.toISOString?.() || null,
+                    },
+                  );
+                }
+
                 res.status(201).json(userLockerGrant);
             } catch (error) {
                 console.error("Error creating user locker grant:", error);
@@ -80,6 +128,34 @@ module.exports = {
                     }
                 });
 
+                const user = await getUserForGrant(updatedGrant.user_id);
+
+                if (user) {
+                  await publishUserGrantUpsert(
+                    {
+                      locker_id: updatedGrant.locker_id,
+                      permission_withdraw: updatedGrant.permission_withdraw,
+                      permission_restock: updatedGrant.permission_restock,
+                      updated_at:
+                        updatedGrant.updated_at?.toISOString?.() ||
+                        new Date().toISOString(),
+                      deleted_at:
+                        updatedGrant.deleted_at?.toISOString?.() || null,
+                    },
+                    {
+                      user_id: user.user_id,
+                      email: user.email,
+                      first_name: user.first_name,
+                      last_name: user.last_name,
+                      password: user.password,
+                      citizen_id: user.citizen_id,
+                      created_at: user.created_at?.toISOString?.() || null,
+                      updated_at: user.updated_at?.toISOString?.() || null,
+                      deleted_at: user.deleted_at?.toISOString?.() || null,
+                    },
+                  );
+                }
+
                 res.status(200).json(updatedGrant);
             } catch (error) {
                 console.error("Error updating user locker grant:", error);
@@ -96,12 +172,52 @@ module.exports = {
                         message: "กรุณาระบุ user_locker_grant_id"
                     });
                 }
+
+                const existingGrant = await prisma.user_locker_grant.findUnique(
+                  {
+                    where: {
+                      user_locker_grant_id: user_locker_grant_id,
+                    },
+                  },
+                );
+
+                if (!existingGrant) {
+                  return res.status(404).json({
+                    message: "ไม่พบ user locker grant",
+                  });
+                }
+
+                const user = await getUserForGrant(existingGrant.user_id);
                 
                 await prisma.user_locker_grant.delete({
                     where: {
                         user_locker_grant_id: user_locker_grant_id
                     }
                 });
+
+                if (user) {
+                  await publishUserGrantUpsert(
+                    {
+                      locker_id: existingGrant.locker_id,
+                      permission_withdraw: existingGrant.permission_withdraw,
+                      permission_restock: existingGrant.permission_restock,
+                      updated_at: new Date().toISOString(),
+                      deleted_at: new Date().toISOString(),
+                    },
+                    {
+                      user_id: user.user_id,
+                      email: user.email,
+                      first_name: user.first_name,
+                      last_name: user.last_name,
+                      password: user.password,
+                      citizen_id: user.citizen_id,
+                      created_at: user.created_at?.toISOString?.() || null,
+                      updated_at: user.updated_at?.toISOString?.() || null,
+                      deleted_at: user.deleted_at?.toISOString?.() || null,
+                    },
+                  );
+                }
+
                 res.status(200).json({
                     message: "ลบการอนุญาตล็อกเกอร์ของผู้ใช้สำเร็จ"
                 });

@@ -273,7 +273,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">ภาพรวมระบบ</h2>
+          <h2 className="text-3xl font-bold tracking-tight">แดชบอร์ด</h2>
           <p className="text-muted-foreground">
             สรุปข้อมูลและสถิติการใช้งานระบบตู้ล็อคเกอร์ยาควบคุม
           </p>
@@ -314,11 +314,11 @@ export default function DashboardPage() {
 
       {/* Stats Cards - แสดงตาม role */}
       {statsCards.length > 0 && (
-        <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-${Math.min(statsCards.length, 4)}`}>
+        <div className={`grid gap-3 md:grid-cols-2 lg:grid-cols-${Math.min(statsCards.length, 4)}`}>
           {statsCards.map((stat, index) => (
             <Link key={index} href={stat.link}>
               <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-6">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
@@ -336,7 +336,7 @@ export default function DashboardPage() {
       )}
 
       {/* Transaction Stats - แสดงสำหรับทุก role ที่มีสิทธิ์ */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-2 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Transaction วันนี้</CardTitle>
