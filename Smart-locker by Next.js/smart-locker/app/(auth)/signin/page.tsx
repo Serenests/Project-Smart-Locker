@@ -22,7 +22,7 @@ export default function SignIn() {
   const [showErrorDialog, setShowErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [redirecting, setRedirecting] = useState(false);
-  
+
   const router = useRouter();
   const API_URL = config.apiUrl;
 
@@ -35,7 +35,7 @@ export default function SignIn() {
     }
 
     setLoading(true);
-    
+
     try {
       const payload = {
         identifier: identifier.trim(),
@@ -59,24 +59,24 @@ export default function SignIn() {
         // ✅ ใช้ authService แทน localStorage
         authService.setToken(response.data.token);
         authService.setUser(response.data.user);
-        
+
         console.log('✅ Token and user data saved');
         console.log('User data:', response.data.user);
 
         setRedirecting(true);
-        
+
         // ✅ redirect ไปหน้า dashboard
         router.push('/dashboard');
-        
+
       } else {
         setErrorMessage(response.data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่');
         setShowErrorDialog(true);
       }
     } catch (error: any) {
       console.error('❌ Login error:', error);
-      
+
       let message = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่';
-      
+
       if (error.response) {
         console.error('Error response:', error.response.data);
         message = error.response.data.message || message;
@@ -86,7 +86,7 @@ export default function SignIn() {
       } else {
         console.error('Error:', error.message);
       }
-      
+
       setErrorMessage(message);
       setShowErrorDialog(true);
     } finally {
@@ -108,45 +108,45 @@ export default function SignIn() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <Lock className="h-6 w-6 text-white" />
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg">
+              <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Smart Locker System</h1>
-              <p className="text-sm text-gray-500">โรงพยาบาล</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 truncate">Smart Locker System</h1>
+              <p className="text-xs sm:text-sm text-gray-500">โรงพยาบาล</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
-        <div className="w-full max-w-md space-y-6">
-          
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-3 sm:px-4 py-6 sm:py-8">
+        <div className="w-full max-w-sm sm:max-w-md space-y-4 sm:space-y-6">
+
           {/* Title Section */}
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center mb-4">
-              <div className="bg-blue-100 p-4 rounded-full">
-                <Lock className="h-12 w-12 text-blue-600" />
+            <div className="flex items-center justify-center mb-3 sm:mb-4">
+              <div className="bg-blue-100 p-3 sm:p-4 rounded-full">
+                <Lock className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-blue-600" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">เข้าสู่ระบบ</h2>
-            <p className="text-gray-600">ระบบตู้ล็อกเกอร์อัจฉริยะ</p>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">เข้าสู่ระบบ</h2>
+            <p className="text-sm sm:text-base text-gray-600">ระบบตู้ล็อกเกอร์อัจฉริยะ</p>
           </div>
 
           {/* Login Card */}
-          <Card className="shadow-lg">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-xl">กรอกข้อมูลเพื่อเข้าสู่ระบบ</CardTitle>
+          <Card className="shadow-lg border-0 sm:border">
+            <CardHeader className="px-4 sm:px-6 py-3 sm:py-4 space-y-1">
+              <CardTitle className="text-lg sm:text-xl">กรอกข้อมูลเพื่อเข้าสู่ระบบ</CardTitle>
             </CardHeader>
-            
-            <CardContent className="space-y-3">
+
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-2 sm:space-y-3">
               {/* Username Field */}
               <div className="space-y-2">
-                <Label htmlFor="identifier" className="text-sm font-medium">
-                  CitizenID / CardID / Email
+                <Label htmlFor="identifier" className="text-xs sm:text-sm font-medium">
+                  บัตรประชาชน / อีเมล
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -157,7 +157,7 @@ export default function SignIn() {
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="pl-10"
+                    className="pl-10 text-sm"
                     disabled={loading}
                   />
                 </div>
@@ -165,7 +165,7 @@ export default function SignIn() {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium">
+                <Label htmlFor="password" className="text-xs sm:text-sm font-medium">
                   รหัสผ่าน
                 </Label>
                 <div className="relative">
@@ -177,32 +177,32 @@ export default function SignIn() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="pl-10"
+                    className="pl-10 text-sm"
                     disabled={loading}
                   />
                 </div>
               </div>
 
               {/* Login Button */}
-              <Button 
+              <Button
                 onClick={handleSignIn}
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 mt-2 sm:mt-4"
                 size="lg"
               >
                 {loading ? (
                   <div className="flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    <span>กำลังเข้าสู่ระบบ...</span>
+                    <span className="text-sm sm:text-base">กำลังเข้าสู่ระบบ...</span>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
                     <Lock className="h-4 w-4" />
-                    <span>เข้าสู่ระบบ</span>
+                    <span className="text-sm sm:text-base">เข้าสู่ระบบ</span>
                   </div>
                 )}
               </Button>
-              <div className="text-sm text-gray-500 text-center">
+              <div className="text-xs sm:text-sm text-gray-500 text-center">
                 ไม่มีบัญชีผู้ใช้?{" "}
                 <Link href="/register" className="text-blue-600 hover:underline ">
                   ลงทะเบียน
@@ -211,40 +211,8 @@ export default function SignIn() {
             </CardContent>
           </Card>
 
-          {/* RFID Login Option */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-50 text-gray-500">หรือ</span>
-            </div>
-          </div>
-
-          <Card className="border-dashed border-2 border-gray-200 hover:border-blue-300 transition-colors">
-            <CardContent className="pt-6">
-              <Button
-                variant="outline"
-                onClick={handleRFIDLogin}
-                className="w-full border-gray-200 hover:bg-blue-50 hover:border-blue-300"
-                size="lg"
-                disabled={loading}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Smartphone className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-medium text-gray-900">ใช้บัตร RFID</div>
-                    <div className="text-sm text-gray-500">แตะบัตรเพื่อเข้าสู่ระบบอัตโนมัติ</div>
-                  </div>
-                </div>
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Footer */}
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-xs sm:text-sm text-gray-500">
             <p>© Smart Locker System</p>
             <p className="mt-1">สำหรับบุคลากรโรงพยาบาลเท่านั้น</p>
           </div>
@@ -261,7 +229,7 @@ export default function SignIn() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => setShowErrorDialog(false)}
               className="bg-blue-600 hover:bg-blue-700"
             >
@@ -273,13 +241,13 @@ export default function SignIn() {
 
       {/* Loading Overlay during redirect */}
       {redirecting && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 shadow-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 sm:p-8 shadow-xl max-w-sm w-full">
             <div className="flex flex-col items-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-blue-600 border-t-transparent"></div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-gray-900">เข้าสู่ระบบสำเร็จ</p>
-                <p className="text-sm text-gray-500 mt-1">กำลังนำคุณไปหน้าหลัก...</p>
+                <p className="text-base sm:text-lg font-semibold text-gray-900">เข้าสู่ระบบสำเร็จ</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">กำลังนำคุณไปหน้าหลัก...</p>
               </div>
             </div>
           </div>

@@ -66,52 +66,52 @@ export default function DashboardPage() {
   // ✅ ฟังก์ชันแสดง scope description
   const getScopeDescription = () => {
     if (!currentUser) return ''
-    
+
     switch (currentUser.role) {
-      case 1: 
+      case 1:
         return 'คุณกำลังดูข้อมูลทั้งระบบ'
-      case 2: 
+      case 2:
         return `คุณกำลังดูข้อมูลในกลุ่ม: ${currentUser.groupLocationName || 'ไม่ระบุ'}`
-      case 3: 
+      case 3:
         return `คุณกำลังดูข้อมูลในหน่วยงาน: ${currentUser.locationName || 'ไม่ระบุ'}`
       default:
         return ''
     }
   }
 
-    useEffect(() => {
-      // ตรวจสอบ authentication
-      if (!authService.isAuthenticated()) {
-        console.log('❌ Not authenticated, redirecting to signin...')
-        router.push('/signin')
-        return
-      }
+  useEffect(() => {
+    // ตรวจสอบ authentication
+    if (!authService.isAuthenticated()) {
+      console.log('❌ Not authenticated, redirecting to signin...')
+      router.push('/signin')
+      return
+    }
 
-      const user = authService.getUser()
-      
-      if (!user || typeof user.role === 'undefined') {
-        console.log('❌ Invalid user data, redirecting to signin...')
-        router.push('/signin')
-        return
-      }
+    const user = authService.getUser()
 
-      if(user.role === 4) {
-        console.log('⚠️ User with role 4 logged in, limited access')
-        router.push('/signin') // อาจจะยังอยู่ที่เดิม แต่จะมีการแสดงผลที่จำกัด
-      }
+    if (!user || typeof user.role === 'undefined') {
+      console.log('❌ Invalid user data, redirecting to signin...')
+      router.push('/signin')
+      return
+    }
 
-      console.log('✅ Current user:', user)
-      setCurrentUser(user)
-      fetchDashboardData()
-    }, []) // ← dependency array ว่าง = ทำครั้งเดียว
+    if (user.role === 4) {
+      console.log('⚠️ User with role 4 logged in, limited access')
+      router.push('/signin') // อาจจะยังอยู่ที่เดิม แต่จะมีการแสดงผลที่จำกัด
+    }
 
-    // ✅ useEffect 2: สำหรับ Fetch Chart เมื่อ selectedLocation เปลี่ยน
-    useEffect(() => {
-      // ต้องรอให้ currentUser โหลดเสร็จก่อน
-      if (currentUser && canShowTransactionHistory()) {
-        fetchTransactionChart()
-      }
-    }, [selectedLocation])
+    console.log('✅ Current user:', user)
+    setCurrentUser(user)
+    fetchDashboardData()
+  }, []) // ← dependency array ว่าง = ทำครั้งเดียว
+
+  // ✅ useEffect 2: สำหรับ Fetch Chart เมื่อ selectedLocation เปลี่ยน
+  useEffect(() => {
+    // ต้องรอให้ currentUser โหลดเสร็จก่อน
+    if (currentUser && canShowTransactionHistory()) {
+      fetchTransactionChart()
+    }
+  }, [selectedLocation])
 
   const fetchDashboardData = async () => {
     try {
@@ -136,7 +136,7 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error("❌ Error fetching dashboard data:", error)
       setError(error.response?.data?.message || 'ไม่สามารถโหลดข้อมูลได้')
-      
+
       if (error.response?.status === 401) {
         router.push('/signin')
       }
@@ -150,26 +150,26 @@ export default function DashboardPage() {
   const fetchTransactionChart = async () => {
     try {
       setChartLoading(true)
-      
-      const locationParam = selectedLocation === 'all' 
-        ? '' 
+
+      const locationParam = selectedLocation === 'all'
+        ? ''
         : `?location_id=${selectedLocation}`
-      
+
       console.log('📊 Fetching transaction chart for location:', selectedLocation)
-      
+
       const response = await apiClient.get(
         `${API_URL}/dashboard/transactionChart${locationParam}`
       )
-      
-      setTransactionChart(response.data.transactionChart || { 
-        daily: [], 
-        monthly: [], 
-        yearly: [] 
+
+      setTransactionChart(response.data.transactionChart || {
+        daily: [],
+        monthly: [],
+        yearly: []
       })
-      
+
       console.log('✅ Transaction chart updated for location:', selectedLocation)
       console.log('👥 Users in scope:', response.data.user_count)
-      
+
     } catch (error: any) {
       console.error('❌ Error fetching transaction chart:', error)
       // ไม่ต้อง set error เพราะจะทำให้ UI แสดง error ทั้งหน้า
@@ -225,13 +225,13 @@ export default function DashboardPage() {
 
   const getActivityBadge = (activity: string) => {
     return activity === "เบิกยา" || activity === "dispense"
-      ? <Badge variant="default" className="bg-blue-600">เบิกยา</Badge> 
+      ? <Badge variant="default" className="bg-blue-600">เบิกยา</Badge>
       : <Badge variant="secondary" className="bg-purple-600 text-white">เติมยา</Badge>
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'สำเร็จ' :
+      case 'สำเร็จ':
         return <Badge className="bg-green-100 text-green-800">สำเร็จ</Badge>
       case 'รอดำเนินการ':
         return <Badge className="bg-yellow-100 text-yellow-800">รอดำเนินการ</Badge>
@@ -278,9 +278,9 @@ export default function DashboardPage() {
             สรุปข้อมูลและสถิติการใช้งานระบบตู้ล็อคเกอร์ยาควบคุม
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={fetchDashboardData}
           disabled={loading}
         >
@@ -299,9 +299,9 @@ export default function DashboardPage() {
                 <p className="font-medium text-red-800">เกิดข้อผิดพลาด</p>
                 <p className="text-sm text-red-600">{error}</p>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={fetchDashboardData}
                 className="ml-auto text-red-600 border-red-300 hover:bg-red-100"
               >
@@ -430,7 +430,7 @@ export default function DashboardPage() {
                             <div>
                               <p className="font-medium text-sm">{location.location_name}</p>
                               <p className="text-xs text-gray-500">
-                                {location.latitude && location.longitude 
+                                {location.latitude && location.longitude
                                   ? `${location.latitude}, ${location.longitude}`
                                   : 'ไม่ระบุพิกัด'}
                               </p>
@@ -521,8 +521,8 @@ export default function DashboardPage() {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Select 
-                    value={selectedLocation} 
+                  <Select
+                    value={selectedLocation}
                     onValueChange={setSelectedLocation}
                     disabled={chartLoading}
                   >
@@ -532,8 +532,8 @@ export default function DashboardPage() {
                     <SelectContent>
                       <SelectItem value="all">ทุกสถานที่</SelectItem>
                       {transactionsByLocation.map((loc) => (
-                        <SelectItem 
-                          key={loc.location_id} 
+                        <SelectItem
+                          key={loc.location_id}
                           value={loc.location_id?.toString() || loc.location}
                         >
                           {loc.location}
@@ -545,8 +545,8 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Tabs 
-                value={chartPeriod} 
+              <Tabs
+                value={chartPeriod}
                 onValueChange={(value: any) => setChartPeriod(value)}
               >
                 <TabsList className="grid w-full max-w-md grid-cols-3">
@@ -573,11 +573,11 @@ export default function DashboardPage() {
                       <BarChart data={currentChartData}>
                         <XAxis
                           dataKey={
-                            chartPeriod === "daily" 
-                              ? "date" 
-                              : chartPeriod === "monthly" 
-                              ? "month" 
-                              : "year"
+                            chartPeriod === "daily"
+                              ? "date"
+                              : chartPeriod === "monthly"
+                                ? "month"
+                                : "year"
                           }
                           stroke="#888888"
                           fontSize={12}
@@ -585,17 +585,17 @@ export default function DashboardPage() {
                         <YAxis stroke="#888888" fontSize={12} />
                         <Tooltip />
                         <Legend />
-                        <Bar 
-                          dataKey="withdraw" 
-                          fill="#3b82f6" 
-                          name="เบิกยา" 
-                          radius={[4, 4, 0, 0]} 
+                        <Bar
+                          dataKey="withdraw"
+                          fill="#3b82f6"
+                          name="เบิกยา"
+                          radius={[4, 4, 0, 0]}
                         />
-                        <Bar 
-                          dataKey="restock" 
-                          fill="#8b5cf6" 
-                          name="เติมยา" 
-                          radius={[4, 4, 0, 0]} 
+                        <Bar
+                          dataKey="restock"
+                          fill="#8b5cf6"
+                          name="เติมยา"
+                          radius={[4, 4, 0, 0]}
                         />
                       </BarChart>
                     </ResponsiveContainer>

@@ -13,7 +13,7 @@ import Link from "next/link"
 
 export default function Register() {
   const router = useRouter()
-  
+
   // Form states
   const [location_id, setLocationId] = useState('')
   const [group_location_id, setGroupLocationId] = useState('')
@@ -30,14 +30,14 @@ export default function Register() {
   const [phone_number, setPhoneNumber] = useState('')
   const [role_id] = useState('4') // Default role_id to 4 (user)
   const [errors, setErrors] = useState({})
-  
+
   // UI states
   const [loading, setLoading] = useState(false)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
-  
+
   // กำหนด interface สำหรับ Location
   interface Location {
     location_id: number;
@@ -65,7 +65,7 @@ export default function Register() {
     fetchGroupLocations()
   }, [])
 
-// ตัวสอง: โหลด Locations เมื่อเลือก Group
+  // ตัวสอง: โหลด Locations เมื่อเลือก Group
   useEffect(() => {
     if (group_location_id) {
       fetchLocationsByGroup(group_location_id)
@@ -81,11 +81,11 @@ export default function Register() {
       const response = await axios.get(`${API_URL}/grouplocation/getAllGrouplocationforRegister`)
       setGroupLocations(response.data.groupLocations || [])
     } catch (error) {
-        console.error('Error fetching group locations:', error)
-        setErrorMessage('ไม่สามารถโหลดข้อมูลกลุ่มสถานที่ได้')
-        setShowErrorDialog(true)
+      console.error('Error fetching group locations:', error)
+      setErrorMessage('ไม่สามารถโหลดข้อมูลกลุ่มสถานที่ได้')
+      setShowErrorDialog(true)
     } finally {
-        setLoadingLocations(false)
+      setLoadingLocations(false)
     }
   }
 
@@ -97,21 +97,21 @@ export default function Register() {
         params: { group_location_id: groupId }
       })
       setLocations(response.data.locations || [])
-        // รีเซ็ต location_id เมื่อเปลี่ยน group
-        setLocationId('')
+      // รีเซ็ต location_id เมื่อเปลี่ยน group
+      setLocationId('')
     } catch (error) {
-        console.error('Error fetching locations:', error)
-        setErrorMessage('ไม่สามารถโหลดข้อมูลสถานที่ได้')
-        setShowErrorDialog(true)
-        setLocations([])
+      console.error('Error fetching locations:', error)
+      setErrorMessage('ไม่สามารถโหลดข้อมูลสถานที่ได้')
+      setShowErrorDialog(true)
+      setLocations([])
     } finally {
-        setLoadingLocations(false)
+      setLoadingLocations(false)
     }
   }
 
   const handleRegister = async () => {
     // Validation
-    if (!first_name.trim() || !last_name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim() || !location_id || !group_location_id || citizen_id.trim().length === 0 ) {
+    if (!first_name.trim() || !last_name.trim() || !email.trim() || !password.trim() || !confirmPassword.trim() || !location_id || !group_location_id || citizen_id.trim().length === 0) {
       setErrorMessage('กรุณากรอกข้อมูลให้ครบ (ชื่อ, นามสกุล, อีเมล, รหัสผ่าน)')
       setShowErrorDialog(true)
       return
@@ -142,7 +142,7 @@ export default function Register() {
     }
 
     setLoading(true)
-    
+
     try {
       const payload = {
         first_name: first_name.trim(),
@@ -176,22 +176,22 @@ export default function Register() {
       if (response.data) {
         setSuccessMessage('ลงทะเบียนสำเร็จ! กำลังนำคุณไปยังหน้าหลัก...')
         setShowSuccessDialog(true)
-        
+
         // Redirect after 2 seconds
         setTimeout(() => {
           router.push('/signin')
         }, 2000)
       }
     } catch (error) {
-        console.error('Registration error:', error)
-        
-        let message = 'เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่'
-        
-    
-    setErrorMessage(message)
-    setShowErrorDialog(true)
+      console.error('Registration error:', error)
+
+      let message = 'เกิดข้อผิดพลาดในการลงทะเบียน กรุณาลองใหม่'
+
+
+      setErrorMessage(message)
+      setShowErrorDialog(true)
     } finally {
-        setLoading(false)
+      setLoading(false)
     }
   }
 
@@ -205,45 +205,45 @@ export default function Register() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
-              <Lock className="h-6 w-6 text-white" />
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <div className="bg-blue-600 p-1.5 sm:p-2 rounded-lg">
+              <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Smart Locker System</h1>
-              <p className="text-sm text-gray-500">โรงพยาบาล</p>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 truncate">Smart Locker System</h1>
+              <p className="text-xs sm:text-sm text-gray-500">โรงพยาบาล</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4 py-8">
-        <div className="w-full max-w-2xl space-y-6">
-          
+      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-3 sm:px-4 py-6 sm:py-8">
+        <div className="w-full max-w-sm sm:max-w-md md:max-w-2xl space-y-4 sm:space-y-6">
+
           {/* Title Section */}
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center mb-4">
-              <div className="bg-blue-100 p-4 rounded-full">
-                <Users className="h-12 w-12 text-blue-600" />
+            <div className="flex items-center justify-center mb-3 sm:mb-4">
+              <div className="bg-blue-100 p-3 sm:p-4 rounded-full">
+                <Users className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-blue-600" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">ลงทะเบียนผู้ใช้ใหม่</h2>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">ลงทะเบียนผู้ใช้ใหม่</h2>
           </div>
 
           {/* Register Card */}
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl">ข้อมูลส่วนตัว</CardTitle>
+          <Card className="shadow-lg border-0 sm:border">
+            <CardHeader className="px-4 sm:px-6 py-3 sm:py-4">
+              <CardTitle className="text-lg sm:text-xl">ข้อมูลส่วนตัว</CardTitle>
             </CardHeader>
-            
-            <CardContent className="space-y-4">
+
+            <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
               {/* Personal Information Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* First Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="first_name" className="text-sm font-medium">
+                  <Label htmlFor="first_name" className="text-xs sm:text-sm font-medium">
                     ชื่อ <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
@@ -255,7 +255,7 @@ export default function Register() {
                       value={first_name}
                       onChange={(e) => setFirstName(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       disabled={loading}
                     />
                   </div>
@@ -263,7 +263,7 @@ export default function Register() {
 
                 {/* Last Name */}
                 <div className="space-y-2">
-                  <Label htmlFor="last_name" className="text-sm font-medium">
+                  <Label htmlFor="last_name" className="text-xs sm:text-sm font-medium">
                     นามสกุล <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
@@ -275,7 +275,7 @@ export default function Register() {
                       value={last_name}
                       onChange={(e) => setLastName(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       disabled={loading}
                     />
                   </div>
@@ -283,7 +283,7 @@ export default function Register() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
+                  <Label htmlFor="email" className="text-xs sm:text-sm font-medium">
                     อีเมล <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
@@ -295,7 +295,7 @@ export default function Register() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       disabled={loading}
                     />
                   </div>
@@ -303,7 +303,7 @@ export default function Register() {
 
                 {/* Phone Number */}
                 <div className="space-y-2">
-                  <Label htmlFor="phone_number" className="text-sm font-medium">
+                  <Label htmlFor="phone_number" className="text-xs sm:text-sm font-medium">
                     เบอร์โทรศัพท์
                   </Label>
                   <div className="relative">
@@ -315,7 +315,7 @@ export default function Register() {
                       value={phone_number}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       disabled={loading}
                     />
                   </div>
@@ -323,7 +323,7 @@ export default function Register() {
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">
+                  <Label htmlFor="password" className="text-xs sm:text-sm font-medium">
                     รหัสผ่าน <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
@@ -335,7 +335,7 @@ export default function Register() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       disabled={loading}
                     />
                   </div>
@@ -343,7 +343,7 @@ export default function Register() {
 
                 {/* Confirm Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                  <Label htmlFor="confirmPassword" className="text-xs sm:text-sm font-medium">
                     ยืนยันรหัสผ่าน <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
@@ -355,7 +355,7 @@ export default function Register() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       disabled={loading}
                     />
                   </div>
@@ -363,7 +363,7 @@ export default function Register() {
 
                 {/* Citizen ID */}
                 <div className="space-y-2">
-                  <Label htmlFor="citizen_id" className="text-sm font-medium">
+                  <Label htmlFor="citizen_id" className="text-xs sm:text-sm font-medium">
                     เลขบัตรประชาชน <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -374,6 +374,7 @@ export default function Register() {
                     value={citizen_id}
                     onChange={(e) => setCitizenId(e.target.value.replace(/\D/g, ''))}
                     onKeyPress={handleKeyPress}
+                    className="text-sm"
                     disabled={loading}
                   />
                 </div>
@@ -381,7 +382,7 @@ export default function Register() {
 
                 {/* Date of Birth */}
                 <div className="space-y-2">
-                  <Label htmlFor="date_of_birth" className="text-sm font-medium">
+                  <Label htmlFor="date_of_birth" className="text-xs sm:text-sm font-medium">
                     วันเกิด
                   </Label>
                   <div className="relative">
@@ -391,7 +392,7 @@ export default function Register() {
                       type="date"
                       value={date_of_birth}
                       onChange={(e) => setDateOfBirth(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 text-sm"
                       disabled={loading}
                     />
                   </div>
@@ -399,14 +400,14 @@ export default function Register() {
 
                 {/* Gender */}
                 <div className="space-y-2">
-                  <Label htmlFor="gender" className="text-sm font-medium">
+                  <Label htmlFor="gender" className="text-xs sm:text-sm font-medium">
                     เพศ
                   </Label>
                   <select
                     id="gender"
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     disabled={loading}
                   >
                     <option value="">เลือกเพศ</option>
@@ -418,7 +419,7 @@ export default function Register() {
 
                 {/* Group Location */}
                 <div className="space-y-2">
-                  <Label htmlFor="group_location_id" className="text-sm font-medium">
+                  <Label htmlFor="group_location_id" className="text-xs sm:text-sm font-medium">
                     กลุ่มสถานที่
                   </Label>
                   <div className="relative">
@@ -427,7 +428,7 @@ export default function Register() {
                       id="group_location_id"
                       value={group_location_id}
                       onChange={(e) => setGroupLocationId(e.target.value)}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       disabled={loading || loadingLocations}
                     >
                       <option value="">เลือกกลุ่มสถานที่</option>
@@ -442,7 +443,7 @@ export default function Register() {
 
                 {/* Location */}
                 <div className="space-y-2" >
-                  <Label htmlFor="location_id" className="text-sm font-medium">
+                  <Label htmlFor="location_id" className="text-xs sm:text-sm font-medium">
                     สถานที่
                   </Label>
                   <div className="relative">
@@ -451,9 +452,7 @@ export default function Register() {
                       id="location_id"
                       value={location_id}
                       onChange={(e) => setLocationId(e.target.value)}
-                      // className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      // if disable change select button to gray with tailwind
-                      className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${!group_location_id || loading || loadingLocations ? 'bg-gray-200 cursor-not-allowed' : ''}`}
+                      className={`w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${!group_location_id || loading || loadingLocations ? 'bg-gray-200 cursor-not-allowed' : ''}`}
                       disabled={!group_location_id || loading || loadingLocations}
                     >
                       <option value="">เลือกสถานที่</option>
@@ -466,30 +465,30 @@ export default function Register() {
                   </div>
                 </div>
 
-                
+
               </div>
 
               {/* Register Button */}
-              <Button 
+              <Button
                 onClick={handleRegister}
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 mt-6"
+                className="w-full bg-blue-600 hover:bg-blue-700 mt-4 sm:mt-6"
                 size="lg"
               >
                 {loading ? (
                   <div className="flex items-center space-x-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    <span>กำลังลงทะเบียน...</span>
+                    <span className="text-sm sm:text-base">กำลังลงทะเบียน...</span>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4" />
-                    <span>ลงทะเบียน</span>
+                    <span className="text-sm sm:text-base">ลงทะเบียน</span>
                   </div>
                 )}
               </Button>
 
-              <div className="text-sm text-gray-500 text-center">
+              <div className="text-xs sm:text-sm text-gray-500 text-center">
                 มีบัญชีผู้ใช้อยู่แล้ว?{" "}
                 <Link href="/signin" className="text-blue-600 hover:underline">
                   เข้าสู่ระบบ
@@ -499,7 +498,7 @@ export default function Register() {
           </Card>
 
           {/* Footer */}
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-xs sm:text-sm text-gray-500">
             <p>© Smart Locker System</p>
             <p className="mt-1">สำหรับบุคลากรโรงพยาบาลเท่านั้น</p>
           </div>
@@ -516,7 +515,7 @@ export default function Register() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => setShowErrorDialog(false)}
               className="bg-blue-600 hover:bg-blue-700"
             >
@@ -536,7 +535,7 @@ export default function Register() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={() => setShowSuccessDialog(false)}
               className="bg-green-600 hover:bg-green-700"
             >

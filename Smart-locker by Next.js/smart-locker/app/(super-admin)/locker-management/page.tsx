@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Plus, Edit, Trash2, AlertTriangle, Package, KeyRound, Eye, Box, AlertCircle } from "lucide-react"
+import { Search, Plus, Edit, Trash2, AlertTriangle, Package, KeyRound, Eye, Box, AlertCircle, Camera } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { authService, apiClient } from "@/lib/auth"
 
@@ -35,11 +35,11 @@ export default function LockerManagementPage() {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
   const router = useRouter()
-  
+
   // เพิ่ม state สำหรับเก็บ current user
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isInitializing, setIsInitializing] = useState(true)
-  
+
   const [lockers, setLockers] = useState<any[]>([])
   const [lockersWithoutProvision, setLockersWithoutProvision] = useState<any[]>([]) // เพิ่ม state ใหม่
   const [provisions, setProvisions] = useState<any[]>([])
@@ -49,8 +49,8 @@ export default function LockerManagementPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingProvisions, setIsLoadingProvisions] = useState(false)
-  
-  
+
+
   // Locker Dialogs
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -87,6 +87,18 @@ export default function LockerManagementPage() {
   const [editSlotLoading, setEditSlotLoading] = useState(false)
   const [deleteSlotLoading, setDeleteSlotLoading] = useState(false)
 
+  // Camera Management States
+  const [isViewCamerasDialogOpen, setIsViewCamerasDialogOpen] = useState(false)
+  const [selectedSlotForCameras, setSelectedSlotForCameras] = useState<any>(null)
+  const [cameras, setCameras] = useState<any[]>([])
+  const [isLoadingCameras, setIsLoadingCameras] = useState(false)
+  const [isAddCameraDialogOpen, setIsAddCameraDialogOpen] = useState(false)
+  const [isDeleteCameraDialogOpen, setIsDeleteCameraDialogOpen] = useState(false)
+  const [selectedCamera, setSelectedCamera] = useState<any>(null)
+  const [cameraToDelete, setCameraToDelete] = useState<any>(null)
+  const [createCameraLoading, setCreateCameraLoading] = useState(false)
+  const [deleteCameraLoading, setDeleteCameraLoading] = useState(false)
+
   const [createForm, setCreateForm] = useState({
     location_id: "",
     locker_location_detail: "",
@@ -122,19 +134,19 @@ export default function LockerManagementPage() {
       router.push('/signin');
       return;
     }
-    
+
     const user = authService.getUser()
-    
+
     // เช็คว่า user object มีค่าและมี role
     if (!user || typeof user.role === 'undefined') {
       console.log('❌ Invalid user data, redirecting to signin...');
       router.push('/signin');
       return;
     }
-    
+
     // เก็บ user ใน state
     setCurrentUser(user)
-    
+
     if (user.role === 4) {
       router.push('/dashboard');
       return;
@@ -180,19 +192,19 @@ export default function LockerManagementPage() {
 
       const user = authService.getUser()
 
-       // เพิ่มการตรวจสอบค่าที่จำเป็น
-    console.log('🔍 Fetching lockers for user:', {
-      role: user.role,
-      groupLocationId: user.groupLocationId,
-      locationId: user.locationId
-    })
+      // เพิ่มการตรวจสอบค่าที่จำเป็น
+      console.log('🔍 Fetching lockers for user:', {
+        role: user.role,
+        groupLocationId: user.groupLocationId,
+        locationId: user.locationId
+      })
       let response
 
       // เรียก API ตาม role
       if (user.role === 1) {
         // System Admin - เห็นทั้งหมด
         response = await apiClient.get(`${API_URL}/locker/getAllLockers`)
-        
+
 
       } else if (user.role === 2) {
         // Organize Admin - เห็นตาม group_location_id
@@ -209,12 +221,12 @@ export default function LockerManagementPage() {
 
       // จัดการข้อมูลที่ได้รับ
       let lockersData = []
-      
+
       if (response.data.lockers) {
         lockersData = response.data.lockers
       } else if (response.data.locker) {
-        lockersData = Array.isArray(response.data.locker) 
-          ? response.data.locker 
+        lockersData = Array.isArray(response.data.locker)
+          ? response.data.locker
           : [response.data.locker]
       }
 
@@ -223,7 +235,7 @@ export default function LockerManagementPage() {
 
     } catch (error: any) {
       console.error('Fetch lockers error:', error)
-      
+
       // จัดการ error แบบเฉพาะเจาะจง
       if (error.response?.status === 403) {
         setError('คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้')
@@ -407,6 +419,90 @@ export default function LockerManagementPage() {
     setIsDeleteSlotDialogOpen(true)
   }
 
+  // ===== CAMERA FUNCTIONS =====
+  const fetchCamerasBySlotId = async (slotId: string) => {
+    try {
+      setIsLoadingCameras(true)
+      const response = await apiClient.get(`${API_URL}/camera/getCamerasBySlotId/${slotId}`)
+
+      setCameras(Array.isArray(response.data.cameras) ? response.data.cameras : [])
+
+    } catch (error: any) {
+      console.error('Fetch cameras error:', error)
+      setError(error.message || 'ไม่สามารถดึงข้อมูล Camera ได้')
+    } finally {
+      setIsLoadingCameras(false)
+    }
+  }
+
+  const handleViewCameras = async (slot: any) => {
+    setSelectedSlotForCameras(slot)
+    setIsViewCamerasDialogOpen(true)
+    await fetchCamerasBySlotId(slot.slot_id)
+  }
+
+  const handleOpenCreateCameraDialog = () => {
+    setIsAddCameraDialogOpen(true)
+  }
+
+  const handleSubmitCreateCamera = async () => {
+    if (!selectedSlotForCameras) return
+
+    try {
+      setCreateCameraLoading(true)
+      setError(null)
+
+      const response = await apiClient.post(`${API_URL}/camera/createCamera`, {
+        slot_id: selectedSlotForCameras.slot_id
+      })
+
+      if (response.status !== 200 && response.status !== 201) {
+        throw new Error(response.data?.message || 'ไม่สามารถสร้าง Camera ได้')
+      }
+
+      await fetchCamerasBySlotId(selectedSlotForCameras.slot_id)
+      setIsAddCameraDialogOpen(false)
+
+    } catch (error: any) {
+      console.error('Error creating camera:', error)
+      setError(error.message || 'เกิดข้อผิดพลาดในการสร้าง Camera')
+    } finally {
+      setCreateCameraLoading(false)
+    }
+  }
+
+  const handleDeleteCamera = async () => {
+    if (!cameraToDelete) return
+
+    try {
+      setDeleteCameraLoading(true)
+      setError(null)
+
+      const response = await apiClient.post(`${API_URL}/camera/deleteCamera`, {
+        camera_id: cameraToDelete.camera_id
+      })
+
+      if (response.status !== 200 && response.status !== 201) {
+        throw new Error(response.data?.message || 'ไม่สามารถลบ Camera ได้')
+      }
+
+      await fetchCamerasBySlotId(selectedSlotForCameras.slot_id)
+      setIsDeleteCameraDialogOpen(false)
+      setCameraToDelete(null)
+
+    } catch (error: any) {
+      console.error("Error deleting camera:", error)
+      setError(error.message || 'เกิดข้อผิดพลาดในการลบ Camera')
+    } finally {
+      setDeleteCameraLoading(false)
+    }
+  }
+
+  const confirmDeleteCamera = (camera: any) => {
+    setCameraToDelete(camera)
+    setIsDeleteCameraDialogOpen(true)
+  }
+
   // Filter lockers for search only (backend already filtered by role)
   const filteredLockers = lockers.filter(
     (locker) =>
@@ -427,8 +523,8 @@ export default function LockerManagementPage() {
   // Locker functions
   const handleOpenCreateDialog = () => {
     setIsAddDialogOpen(true)
-    setCreateForm({ 
-      location_id: "", 
+    setCreateForm({
+      location_id: "",
       locker_location_detail: "",
     })
   }
@@ -566,17 +662,17 @@ export default function LockerManagementPage() {
       setCreateProvisionLoading(false)
     }
   }
-  
-  
+
+
   const handleEditProvision = (provision: any) => {
     setSelectedProvision(provision)
-    
+
     let localDateTime = ""
     if (provision.expires_at) {
       const date = new Date(provision.expires_at)
       localDateTime = date.toISOString().slice(0, 16)
     }
-    
+
     setEditProvisionForm({
       expires_at: localDateTime,
     })
@@ -679,7 +775,7 @@ export default function LockerManagementPage() {
               <KeyRound className="h-4 w-4" />
               จัดการการลงทะเบียนล็อกเกอร์
             </TabsTrigger>
-          )}  
+          )}
         </TabsList>
 
         {/* LOCKERS TAB */}
@@ -692,7 +788,7 @@ export default function LockerManagementPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
-              /> 
+              />
             </div>
             {currentUser?.role === 1 && (
               <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleOpenCreateDialog}>
@@ -767,9 +863,9 @@ export default function LockerManagementPage() {
                         </TableCell>
                         <TableCell>{locker.locker_location_detail || "-"}</TableCell>
                         <TableCell>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleViewSlots(locker)}
                             className="flex items-center gap-2"
                           >
@@ -814,7 +910,7 @@ export default function LockerManagementPage() {
                   value={searchProvisionTerm}
                   onChange={(e) => setSearchProvisionTerm(e.target.value)}
                   className="pl-10"
-                /> 
+                />
               </div>
               <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleOpenCreateProvisionDialog}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -877,26 +973,25 @@ export default function LockerManagementPage() {
                             {provision.provision_code}
                           </TableCell>
                           <TableCell>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              provision.is_activated 
-                                ? 'bg-green-100 text-green-800' 
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${provision.is_activated
+                                ? 'bg-green-100 text-green-800'
                                 : 'bg-gray-100 text-gray-800'
-                            }`}>
+                              }`}>
                               {provision.is_activated ? 'ใช้งานแล้ว' : 'ยังไม่ใช้งาน'}
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => handleEditProvision(provision)}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => confirmDeleteProvision(provision)}
                               >
@@ -953,7 +1048,7 @@ export default function LockerManagementPage() {
                 <p className="text-gray-500 mb-4">เริ่มต้นด้วยการเพิ่มช่องเก็บของใหม่</p>
               </div>
             ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {slots.map((slot) => (
                   <Card key={slot.slot_id} className="overflow-hidden w-full">
                     <CardHeader className="bg-gray-50 pb-3">
@@ -962,25 +1057,34 @@ export default function LockerManagementPage() {
                           <Box className="h-4 w-4 shrink-0" />
                           Slot #{slot.slot_id}
                         </CardTitle>
-                        {currentUser?.role === 1 && (
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => handleEditSlot(slot)}
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => confirmDeleteSlot(slot)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        )}
+                        <div className="flex gap-2 items-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewCameras(slot)}
+                          >
+                            <Camera className="h-4 w-4" />
+                          </Button>
+                          {currentUser?.role === 1 && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditSlot(slot)}
+                              >
+                                <Edit className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => confirmDeleteSlot(slot)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <CardDescription className="text-xs">
                         ความจุ: {slot.capacity} หน่วย
@@ -995,7 +1099,7 @@ export default function LockerManagementPage() {
                       ) : (
                         <div className="space-y-3">
                           <p className="text-xs font-medium text-gray-700 uppercase">สินค้าในช่อง:</p>
-                            <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-2">
                             {slot.Slot_stock.map((stock: any) => (
                               // แก้ที่ stock item div
                               <div
@@ -1003,11 +1107,11 @@ export default function LockerManagementPage() {
                                 className="border rounded-lg p-2 bg-white hover:bg-gray-50 transition-colors"
                               >
                                 <div className="flex flex-col gap-1">
-                                  
+
                                   <p className="font-medium text-xs truncate" title={stock.Product?.product_name}>
                                     {stock.Product?.product_name || "ไม่ระบุชื่อ"}
                                   </p>
-                                  
+
                                   <p className="text-xs text-gray-500">
                                     Lot: {stock.lot_id}
                                   </p>
@@ -1030,9 +1134,9 @@ export default function LockerManagementPage() {
                                   )}
                                 </div>
                               </div>
-                          ))}
+                            ))}
                           </div>
-                          
+
                         </div>
                       )}
                     </CardContent>
@@ -1067,14 +1171,14 @@ export default function LockerManagementPage() {
                 type="number"
                 min="1"
                 value={createSlotForm.capacity}
-                onChange={(e) => setCreateSlotForm({capacity: e.target.value})}
+                onChange={(e) => setCreateSlotForm({ capacity: e.target.value })}
                 placeholder="เช่น 10"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setIsAddSlotDialogOpen(false)
                 setCreateSlotForm({ capacity: "" })
@@ -1083,7 +1187,7 @@ export default function LockerManagementPage() {
             >
               ยกเลิก
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmitCreateSlot}
               disabled={createSlotLoading || !createSlotForm.capacity}
             >
@@ -1117,20 +1221,20 @@ export default function LockerManagementPage() {
                 type="number"
                 min="1"
                 value={editSlotForm.capacity}
-                onChange={(e) => setEditSlotForm({capacity: e.target.value})}
+                onChange={(e) => setEditSlotForm({ capacity: e.target.value })}
                 placeholder="เช่น 10"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsEditSlotDialogOpen(false)}
               disabled={editSlotLoading}
             >
               ยกเลิก
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmitEditSlot}
               disabled={editSlotLoading || !editSlotForm.capacity}
             >
@@ -1161,7 +1265,7 @@ export default function LockerManagementPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={() => {
                 setIsDeleteSlotDialogOpen(false)
                 setSlotToDelete(null)
@@ -1188,6 +1292,170 @@ export default function LockerManagementPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* ===== VIEW CAMERAS DIALOG ===== */}
+      <Dialog open={isViewCamerasDialogOpen} onOpenChange={setIsViewCamerasDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              กล้องในช่อง {selectedSlotForCameras?.slot_id}
+            </DialogTitle>
+            <DialogDescription>
+              จัดการกล้องที่ติดตั้งในช่องหมายเลข {selectedSlotForCameras?.slot_id}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-muted-foreground">
+                จำนวนกล้องทั้งหมด: {cameras.length}
+              </p>
+              {currentUser?.role === 1 && (
+                <Button onClick={handleOpenCreateCameraDialog} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  เพิ่มกล้อง
+                </Button>
+              )}
+            </div>
+
+            {isLoadingCameras ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-gray-800 mx-auto mb-4"></div>
+                <p className="text-gray-500">กำลังโหลดข้อมูล...</p>
+              </div>
+            ) : cameras.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <Camera className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">ยังไม่มีกล้อง</h3>
+                <p className="text-gray-500">เริ่มต้นด้วยการเพิ่มกล้องใหม่</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {cameras.map((camera) => (
+                  <div key={camera.camera_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <Camera className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-sm">Camera #{camera.camera_id}</p>
+                        <p className="text-xs text-gray-500">Slot ID: {camera.slot_id}</p>
+                      </div>
+                    </div>
+                    {currentUser?.role === 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => confirmDeleteCamera(camera)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsViewCamerasDialogOpen(false)
+                setCameras([])
+              }}
+            >
+              ปิด
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== ADD CAMERA DIALOG ===== */}
+      <Dialog open={isAddCameraDialogOpen} onOpenChange={setIsAddCameraDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              เพิ่มกล้องใหม่
+            </DialogTitle>
+            <DialogDescription>
+              เพิ่มกล้องใหม่ในช่องหมายเลข {selectedSlotForCameras?.slot_id}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-900">
+                <span className="font-medium">ช่องที่เลือก:</span> Slot #{selectedSlotForCameras?.slot_id}
+              </p>
+              <p className="text-sm text-blue-800 mt-1">
+                <span className="font-medium">ความจุ:</span> {selectedSlotForCameras?.capacity} หน่วย
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddCameraDialogOpen(false)}
+              disabled={createCameraLoading}
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={handleSubmitCreateCamera}
+              disabled={createCameraLoading}
+            >
+              {createCameraLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>กำลังเพิ่ม...</span>
+                </div>
+              ) : (
+                'เพิ่มกล้อง'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== DELETE CAMERA CONFIRMATION ===== */}
+      <AlertDialog open={isDeleteCameraDialogOpen} onOpenChange={setIsDeleteCameraDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบกล้อง</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณต้องการลบ Camera #{cameraToDelete?.camera_id} ใช่หรือไม่?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setIsDeleteCameraDialogOpen(false)
+                setCameraToDelete(null)
+              }}
+              disabled={deleteCameraLoading}
+            >
+              ยกเลิก
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteCamera}
+              disabled={deleteCameraLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteCameraLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>กำลังลบ...</span>
+                </div>
+              ) : (
+                'ลบกล้อง'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* LOCKER DIALOGS */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -1202,7 +1470,7 @@ export default function LockerManagementPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={() => {
                 setIsDeleteDialogOpen(false)
                 setLockerToDelete(null)
@@ -1243,7 +1511,7 @@ export default function LockerManagementPage() {
                 <Label htmlFor="create_location_id">สถานที่ *</Label>
                 <Select
                   value={createForm.location_id}
-                  onValueChange={(value) => setCreateForm({...createForm, location_id: value})}
+                  onValueChange={(value) => setCreateForm({ ...createForm, location_id: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกสถานที่" />
@@ -1262,19 +1530,19 @@ export default function LockerManagementPage() {
                 <Input
                   id="create_locker_location_detail"
                   value={createForm.locker_location_detail}
-                  onChange={(e) => setCreateForm({...createForm, locker_location_detail: e.target.value})}
+                  onChange={(e) => setCreateForm({ ...createForm, locker_location_detail: e.target.value })}
                   placeholder="เช่น ชั้น 1 ข้างห้องน้ำ"
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setIsAddDialogOpen(false)
-                setCreateForm({ 
-                  location_id: "", 
+                setCreateForm({
+                  location_id: "",
                   locker_location_detail: "",
                 })
               }}
@@ -1282,7 +1550,7 @@ export default function LockerManagementPage() {
             >
               ยกเลิก
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmitCreateLocker}
               disabled={createFormLoading || !createForm.location_id || !createForm.locker_location_detail}
               className="bg-gray-800"
@@ -1315,21 +1583,21 @@ export default function LockerManagementPage() {
                 <Input
                   id="edit_locker_location_detail"
                   value={editForm.locker_location_detail}
-                  onChange={(e) => setEditForm({...editForm, locker_location_detail: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, locker_location_detail: e.target.value })}
                   placeholder="เช่น ชั้น 1 ข้างห้องน้ำ"
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
               disabled={editLoading}
             >
               ยกเลิก
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmitEdit}
               disabled={editLoading || !editForm.locker_location_detail}
             >
@@ -1362,7 +1630,7 @@ export default function LockerManagementPage() {
                   <Label htmlFor="create_provision_locker_id">ล็อกเกอร์ *</Label>
                   <Select
                     value={createProvisionForm.locker_id}
-                    onValueChange={(value) => setCreateProvisionForm({...createProvisionForm, locker_id: value})}
+                    onValueChange={(value) => setCreateProvisionForm({ ...createProvisionForm, locker_id: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="เลือกล็อกเกอร์" />
@@ -1393,13 +1661,13 @@ export default function LockerManagementPage() {
                     id="create_expires_at"
                     type="datetime-local"
                     value={createProvisionForm.expires_at}
-                    onChange={(e) => setCreateProvisionForm({...createProvisionForm, expires_at: e.target.value})}
+                    onChange={(e) => setCreateProvisionForm({ ...createProvisionForm, expires_at: e.target.value })}
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setIsAddProvisionDialogOpen(false)
                     setCreateProvisionForm({ locker_id: "", provision_code: "", expires_at: "" })
@@ -1408,7 +1676,7 @@ export default function LockerManagementPage() {
                 >
                   ยกเลิก
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSubmitCreateProvision}
                   disabled={createProvisionLoading || !createProvisionForm.locker_id}
                   className="bg-blue-600 hover:bg-blue-700"
@@ -1441,19 +1709,19 @@ export default function LockerManagementPage() {
                     id="edit_expires_at"
                     type="datetime-local"
                     value={editProvisionForm.expires_at}
-                    onChange={(e) => setEditProvisionForm({expires_at: e.target.value})}
+                    onChange={(e) => setEditProvisionForm({ expires_at: e.target.value })}
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setIsEditProvisionDialogOpen(false)}
                   disabled={editProvisionLoading}
                 >
                   ยกเลิก
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSubmitEditProvision}
                   disabled={editProvisionLoading}
                   className="bg-blue-600 hover:bg-blue-700"
@@ -1488,7 +1756,7 @@ export default function LockerManagementPage() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel 
+                <AlertDialogCancel
                   onClick={() => {
                     setIsDeleteProvisionDialogOpen(false)
                     setProvisionToDelete(null)
