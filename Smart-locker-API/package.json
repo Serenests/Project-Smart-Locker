@@ -9,6 +9,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  
+  
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "@types/node": "^24.5.2",
