@@ -1,4 +1,5 @@
 //Smart-locker-API/server.js
+require('dotenv').config();  
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -11,7 +12,7 @@ const {
   requireAnyUser,
 } = require("./middleware/auth"); //auth middleware
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Import controllers
 const { UserController } = require("./controllers/UserController"); //usercontroller
