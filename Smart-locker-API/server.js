@@ -1,5 +1,5 @@
 //Smart-locker-API/server.js
-require('dotenv').config();  
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -45,6 +45,13 @@ const { QrTaskController } = require("./controllers/QrTaskController");
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Route สำหรับรับข้อมูลผูกบัตร RFID จากตู้ล็อกเกอร์โดยตรง (ยืนยันตัวตนด้วย VerifyLocker)
+app.post(
+  "/user/syncRfid",
+  LockerController.verifyLocker,
+  UserController.syncRfid,
+);
 
 //User routes
 app.post("/auth/signin", UserController.signIn); //SignIn route

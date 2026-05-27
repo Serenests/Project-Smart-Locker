@@ -481,6 +481,57 @@ module.exports = {
       }
     },
 
+    // --- เพิ่มฟังก์ชันใหม่ สำหรับรับข้อมูล RFID จากตู้ล็อกเกอร์ ---
+    syncRfid: async (req, res) => {
+      try {
+        const { user_id, card_uid } = req.body;
+
+        if (!user_id || !card_uid) {
+          return res.status(400).json({
+            message: "กรุณาระบุ user_id และ card_uid",
+          });
+        }
+
+        console.log(
+          `📡 ตู้ล็อกเกอร์กำลังขอผูกบัตร RFID: ${card_uid} ให้กับผู้ใช้: ${user_id}`,
+        );
+
+        // ตรวจสอบก่อนว่ามีคนอื่นใช้ UID นี้ไปแล้วหรือยัง (เพื่อป้องกันบัตรซ้ำ)
+        const existingCard = await prisma.user.findFirst({
+          where: { card_uid: card_uid },
+        });
+
+        if (existingCard && existingCard.user_id !== user_id) {
+          return res.status(409).json({
+            message: "บัตร RFID นี้ถูกใช้งานโดยพนักงานคนอื่นแล้ว",
+          });
+        }
+
+        // อัปเดต card_uid ลงฐานข้อมูล
+        const updatedUser = await prisma.user.update({
+          where: { user_id: user_id },
+          data: {
+            card_uid: card_uid,
+            updated_at: new Date(),
+          },
+        });
+
+        res.status(200).json({
+          message: "ผูกบัตร RFID และอัปเดตขึ้น Server สำเร็จ",
+          user: {
+            user_id: updatedUser.user_id,
+            card_uid: updatedUser.card_uid,
+          },
+        });
+      } catch (error) {
+        console.error("Sync RFID error:", error);
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดในการผูกบัตร RFID",
+          error: error.message,
+        });
+      }
+    },
+
     getAllUsers: async (req, res) => {
       try {
         const { search } = req.query;
