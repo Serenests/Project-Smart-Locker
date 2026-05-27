@@ -40,6 +40,7 @@ module.exports = {
                 user_id: true,
                 citizen_id: true,
                 email: true,
+                role_id: true,
                 first_name: true,
                 last_name: true,
                 password: true,
@@ -107,9 +108,7 @@ module.exports = {
           },
         });
 
-        console.log(
-          `[SYNC] synced ${updatedProducts.length} products`,
-        );
+        console.log(`[SYNC] synced ${updatedProducts.length} products`);
 
         res.json({
           status: "success",
@@ -123,7 +122,7 @@ module.exports = {
       }
     },
 
-    synSlots : async (req, res) => {
+    synSlots: async (req, res) => {
       const { last_sync } = req.query;
       const lastSyncDate = last_sync ? new Date(last_sync) : new Date(0);
 
@@ -168,7 +167,5 @@ module.exports = {
         res.status(500).json({ message: "Failed to sync slots" });
       }
     },
-
-    
   },
 };
