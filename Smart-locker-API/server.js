@@ -461,6 +461,12 @@ app.get(
   CameraController.getCamerasBySlotId,
 ); //Get Cameras by Slot ID route
 
+app.post(
+  "/camera/sync-snapshot",
+  LockerController.verifyLocker,
+  CameraController.syncSnapshot,
+);
+
 //Snapshot routes
 app.post("/snapshot/saveSnapshot", SnapshotController.saveSnapshot); //Create Snapshot route
 app.get(

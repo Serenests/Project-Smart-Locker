@@ -177,6 +177,78 @@ module.exports = {
       }
     },
 
-    
+    syncSnapshot: async (req, res) => {
+      try {
+        // 1. รับค่าที่ส่งมาจาก camera_sync_agent.py
+        const {
+          transaction_id,
+          slot_id,
+          camera_amount,
+          action_type,
+          image_path,
+        } = req.body;
+
+        // 2. หา camera_id ของช่องนี้ (ตกลงกันว่า 1 ช่องมีกล้อง 1 ตัว)
+        const camera = await prisma.camera.findFirst({
+          where: { slot_id: parseInt(slot_id) },
+        });
+
+        if (!camera) {
+          return res
+            .status(404)
+            .json({ error: "ไม่พบข้อมูลกล้องสำหรับช่องนี้ในระบบ" });
+        }
+
+        // 3. หา Transaction_detail ที่ตรงกับ transaction_id และ slot_id นี้
+        const txDetail = await prisma.transaction_detail.findFirst({
+          where: {
+            transaction_id: parseInt(transaction_id),
+            slot_id: parseInt(slot_id),
+          },
+        });
+
+        if (!txDetail) {
+          // ⚠️ จุดสำคัญ: ถ้าหาไม่เจอ อาจจะเพราะฝั่งตู้ยัง Sync Transaction หลักมาไม่ถึง
+          return res.status(404).json({
+            error:
+              "ไม่พบ Transaction Detail (อาจจะยัง Sync ข้อมูลรายการไม่เสร็จ)",
+          });
+        }
+
+        // 4. ตรวจสอบข้อขัดแย้ง (Discrepancy)
+        // เทียบยอดที่ user กดทำรายการ (txDetail.amount) กับยอดที่ AI นับได้ (camera_amount)
+        const isDiscrepancy = txDetail.amount !== parseInt(camera_amount);
+
+        // 5. บันทึกข้อมูลลงฐานข้อมูลแบบรวดเดียว (Transaction)
+        await prisma.$transaction([
+          // 5.1 อัปเดตข้อมูลในตาราง Transaction_detail
+          prisma.transaction_detail.update({
+            where: { transaction_detail_id: txDetail.transaction_detail_id },
+            data: {
+              camera_amount: parseInt(camera_amount),
+              is_discrepancy: isDiscrepancy,
+            },
+          }),
+
+          // 5.2 สร้างข้อมูลในตาราง Snapshot เก็บแค่ Path ย่อๆ ของ Cloudinary
+          prisma.snapshot.create({
+            data: {
+              image_path: image_path,
+              camera_id: camera.camera_id,
+              transaction_id: parseInt(transaction_id),
+              transaction_detail_id: txDetail.transaction_detail_id,
+              slot_stock_id: txDetail.slot_stock_id,
+            },
+          }),
+        ]);
+
+        return res.status(200).json({
+          message: "ซิงค์ข้อมูลภาพและประมวลผล Discrepancy สำเร็จ!",
+        });
+      } catch (error) {
+        console.error("🔥 Error in syncSnapshot:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    },
   },
 };
