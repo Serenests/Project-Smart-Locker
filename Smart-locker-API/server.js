@@ -482,6 +482,10 @@ app.get(
   DashboardController.getTransactionChartByLocation,
 );
 
+app.get('/ping', (req, res) => {
+  res.send('OK')
+})
+
 app.get("/", (req, res) => {
   res.send("Hello from the server!");
 });
