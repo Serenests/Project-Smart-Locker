@@ -147,12 +147,18 @@ interface Snapshot {
   image_path: string; // Cloudinary URL
   camera_id: number;
   created_at: string;
-  Transaction_detail: {
-    Product: {
+  transaction_id?: number;
+  Transaction_detail?: {
+    transaction_id?: number;
+    Product?: {
       product_name: string;
     };
-    Slot: {
+    Slot?: {
       slot_id: number;
+    };
+    Transaction?: {
+      created_at?: string;
+      transaction_id?: number;
     };
   };
 }
