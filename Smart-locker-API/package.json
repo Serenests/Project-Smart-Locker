@@ -11,13 +11,12 @@
     "dev": "nodemon server.js",
     "postinstall": "prisma generate"
   },
-  
-  
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "@types/node": "^24.5.2",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
