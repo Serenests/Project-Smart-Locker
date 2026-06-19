@@ -473,6 +473,7 @@ app.get(
   "/snapshot/getSnapshotsByTransaction/:transaction_id",
   SnapshotController.getSnapshotsByTransaction,
 ); //Get Snapshots by Transaction ID route
+app.get("/snapshot/getFilesInFolder", SnapshotController.getFilesInFolder);
 
 // เพิ่ม middleware authentication
 // Dashboard routes

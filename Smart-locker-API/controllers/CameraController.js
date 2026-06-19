@@ -216,8 +216,13 @@ module.exports = {
         }
 
         // 4. ตรวจสอบข้อขัดแย้ง (Discrepancy)
+        const parsedCameraAmount =
+          camera_amount != null ? parseInt(camera_amount) : null;
         // เทียบยอดที่ user กดทำรายการ (txDetail.amount) กับยอดที่ AI นับได้ (camera_amount)
-        const isDiscrepancy = txDetail.amount !== parseInt(camera_amount);
+        const isDiscrepancy =
+          parsedCameraAmount === null
+            ? true
+            : txDetail.amount !== parsedCameraAmount;
 
         // 5. บันทึกข้อมูลลงฐานข้อมูลแบบรวดเดียว (Transaction)
         await prisma.$transaction([
@@ -225,7 +230,7 @@ module.exports = {
           prisma.transaction_detail.update({
             where: { transaction_detail_id: txDetail.transaction_detail_id },
             data: {
-              camera_amount: parseInt(camera_amount),
+              camera_amount: parsedCameraAmount,
               is_discrepancy: isDiscrepancy,
             },
           }),

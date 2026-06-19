@@ -1,18 +1,37 @@
 //app/transaction/page.tsx
-'use client'
-import { thSarabunBase64 } from "@/lib/thsarabun-font"
-import { useState, useEffect, use } from "react"
-import { Camera, Image as ImageIcon } from 'lucide-react'
-import React from 'react'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ChartColumn, SquareUserRound, UserRound, MapPin, Clock3 } from 'lucide-react';
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+"use client";
+import { thSarabunBase64 } from "@/lib/thsarabun-font";
+import { useState, useEffect, use } from "react";
+import { Camera, Image as ImageIcon } from "lucide-react";
+import React from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  ChartColumn,
+  SquareUserRound,
+  UserRound,
+  MapPin,
+  Clock3,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +39,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,181 +49,207 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Search, Plus, Edit, Trash2, Eye, AlertTriangle, ShoppingCart, CheckCircle, XCircle, Package, FileText, Download } from "lucide-react"
-import { TriangleAlert } from "lucide-react"
-import { authService, apiClient } from "@/lib/auth"
-import { ChevronRight, ChevronDown } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  AlertTriangle,
+  ShoppingCart,
+  CheckCircle,
+  XCircle,
+  Package,
+  FileText,
+  Download,
+  Folder,
+} from "lucide-react";
+import { TriangleAlert } from "lucide-react";
+import { authService, apiClient } from "@/lib/auth";
+import { ChevronRight, ChevronDown } from "lucide-react";
 
 interface CartItem {
-  slot_stock_id: number
-  product_id: string
-  lot_id: string
-  slot_id: number
-  amount: number
-  currentSlotStockAmount: number
-  action: string
-  was_created?: boolean
-  amount_added?: number
+  slot_stock_id: number;
+  product_id: string;
+  lot_id: string;
+  slot_id: number;
+  amount: number;
+  currentSlotStockAmount: number;
+  action: string;
+  was_created?: boolean;
+  amount_added?: number;
 }
 
 interface TransactionDetail {
-  transaction_detail_id: number
-  transaction_id: number
-  product_id: string
-  slot_stock_id: number
-  slot_id: number
-  amount: number
-  camera_amount?: number
-  is_discrepancy?: boolean
-  created_at: string
+  transaction_detail_id: number;
+  transaction_id: number;
+  product_id: string;
+  slot_stock_id: number;
+  slot_id: number;
+  amount: number;
+  camera_amount?: number;
+  is_discrepancy?: boolean;
+  created_at: string;
   Transaction: {
-    transaction_id: number
-    user_id: string
-    activity: string
-    status: string
+    transaction_id: number;
+    user_id: string;
+    activity: string;
+    status: string;
     User: {
-      first_name: string
-      last_name: string
+      first_name: string;
+      last_name: string;
       Location: {
-        location_name: string
+        location_name: string;
         Group_Location: {
-          group_location_name: string
-        }
-      }
-    }
-  }
+          group_location_name: string;
+        };
+      };
+    };
+  };
   Product: {
-    product_id: string
-    product_name: string
-  }
+    product_id: string;
+    product_name: string;
+  };
   Slot_stock: {
-    slot_id: number
-    lot_id: string
-    amount: number
-  }
+    slot_id: number;
+    lot_id: string;
+    amount: number;
+  };
   Slot: {
-    slot_id: number
-    locker_id: number
-    capacity: number
+    slot_id: number;
+    locker_id: number;
+    capacity: number;
     Locker: {
-      locker_id: number
-      locker_location_detail: string
+      locker_id: number;
+      locker_location_detail: string;
       Location: {
-        location_name: string
+        location_name: string;
         Group_Location: {
-          group_location_name: string
-        }
-      }
-    }
-  }
+          group_location_name: string;
+        };
+      };
+    };
+  };
 }
 
 interface Snapshot {
-  snapshot_id: number
-  image_path: string  // Cloudinary URL
-  camera_id: number
-  created_at: string
-  Transaction_detail: {
-    Product: {
-      product_name: string
-    }
-    Slot: {
-      slot_id: number
-    }
-  }
+  snapshot_id: number;
+  image_path: string; // Cloudinary URL
+  camera_id: number;
+  created_at: string;
+  transaction_id?: number;
+  Transaction_detail?: {
+    transaction_id?: number;
+    Product?: {
+      product_name: string;
+    };
+    Slot?: {
+      slot_id: number;
+    };
+    Transaction?: {
+      created_at?: string;
+      transaction_id?: number;
+    };
+  };
 }
 
 interface Location {
-  location_id: number
-  location_name: string
-  group_location_id: number
+  location_id: number;
+  location_name: string;
+  group_location_id: number;
   Group_Location?: {
-    group_location_id: number
-    group_location_name: string
-  }
+    group_location_id: number;
+    group_location_name: string;
+  };
 }
 
 interface GroupLocation {
-  group_location_id: number
-  group_location_name: string
+  group_location_id: number;
+  group_location_name: string;
 }
 
 // ✅ แก้ไข Interfaces ให้ตรงกับ Backend Response
 
 interface ReportItem {
-  product_id: string
-  product_name: string
-  total_restock: number
-  total_withdraw: number
-  current_stock: number
+  product_id: string;
+  product_name: string;
+  total_restock: number;
+  total_withdraw: number;
+  current_stock: number;
 }
 
 interface DetailedTransactionItem {
-  product_id: string
-  product_name: string
-  lot_id: string
-  slot_id: number
-  locker_id: number
-  locker_detail: string
-  amount: number
+  product_id: string;
+  product_name: string;
+  lot_id: string;
+  slot_id: number;
+  locker_id: number;
+  locker_detail: string;
+  amount: number;
 }
 
 interface DetailedTransaction {
-  transaction_id: number
-  user_id: string
-  user_name: string
-  user_role: string
-  activity: string
-  status: string
-  location_name: string
-  group_location_name: string
-  created_at: string
-  items: DetailedTransactionItem[]
-  total_amount: number
+  transaction_id: number;
+  user_id: string;
+  user_name: string;
+  user_role: string;
+  activity: string;
+  status: string;
+  location_name: string;
+  group_location_name: string;
+  created_at: string;
+  items: DetailedTransactionItem[];
+  total_amount: number;
 }
 
 interface ReportFilters {
-  user_ids: string[]
-  user_names: string[]
-  product_ids: string[]
-  product_names: string[]
+  user_ids: string[];
+  user_names: string[];
+  product_ids: string[];
+  product_names: string[];
 }
 
 interface ReportSummary {
-  total_products: number
-  total_restock_all: number
-  total_withdraw_all: number
-  total_current_stock: number
-  total_transactions: number
-  total_transaction_items: number
-  total_restock_transactions: number
-  total_withdraw_transactions: number
+  total_products: number;
+  total_restock_all: number;
+  total_withdraw_all: number;
+  total_current_stock: number;
+  total_transactions: number;
+  total_transaction_items: number;
+  total_restock_transactions: number;
+  total_withdraw_transactions: number;
 }
 
 interface ReportData {
-  location_name: string
-  group_location_name: string
-  start_date: string
-  end_date: string
-  generated_at: string
-  filters: ReportFilters
-  summary_items: ReportItem[]
-  detailed_transactions: DetailedTransaction[]
-  summary: ReportSummary
+  location_name: string;
+  group_location_name: string;
+  start_date: string;
+  end_date: string;
+  generated_at: string;
+  filters: ReportFilters;
+  summary_items: ReportItem[];
+  detailed_transactions: DetailedTransaction[];
+  summary: ReportSummary;
 }
 
 // ✅ Multi-select Checkbox Component with Search
 interface MultiSelectCheckboxProps {
-  items: Array<{ id: string; name: string; subtitle?: string }>
-  selectedIds: string[]
-  onToggle: (id: string) => void
-  onToggleAll: () => void
-  searchPlaceholder: string
-  emptyMessage: string
+  items: Array<{ id: string; name: string; subtitle?: string }>;
+  selectedIds: string[];
+  onToggle: (id: string) => void;
+  onToggleAll: () => void;
+  searchPlaceholder: string;
+  emptyMessage: string;
 }
 
 const MultiSelectCheckbox: React.FC<MultiSelectCheckboxProps> = ({
@@ -213,18 +258,23 @@ const MultiSelectCheckbox: React.FC<MultiSelectCheckboxProps> = ({
   onToggle,
   onToggleAll,
   searchPlaceholder,
-  emptyMessage
+  emptyMessage,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.subtitle?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredItems = items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.subtitle?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
-  const allSelected = filteredItems.length > 0 && filteredItems.every(item => selectedIds.includes(item.id))
-  const someSelected = filteredItems.some(item => selectedIds.includes(item.id))
+  const allSelected =
+    filteredItems.length > 0 &&
+    filteredItems.every((item) => selectedIds.includes(item.id));
+  const someSelected = filteredItems.some((item) =>
+    selectedIds.includes(item.id),
+  );
 
   return (
     <div className="border rounded-md">
@@ -248,13 +298,16 @@ const MultiSelectCheckbox: React.FC<MultiSelectCheckboxProps> = ({
           checked={allSelected}
           ref={(input) => {
             if (input) {
-              input.indeterminate = someSelected && !allSelected
+              input.indeterminate = someSelected && !allSelected;
             }
           }}
           onChange={onToggleAll}
           className="w-4 h-4 rounded border-gray-300"
         />
-        <Label className="text-sm font-semibold cursor-pointer" onClick={onToggleAll}>
+        <Label
+          className="text-sm font-semibold cursor-pointer"
+          onClick={onToggleAll}
+        >
           เลือกทั้งหมด ({selectedIds.length}/{items.length})
         </Label>
       </div>
@@ -262,7 +315,9 @@ const MultiSelectCheckbox: React.FC<MultiSelectCheckboxProps> = ({
       {/* Items List */}
       <div className="max-h-[200px] overflow-y-auto">
         {filteredItems.length === 0 ? (
-          <p className="text-center text-gray-500 text-sm py-4">{emptyMessage}</p>
+          <p className="text-center text-gray-500 text-sm py-4">
+            {emptyMessage}
+          </p>
         ) : (
           filteredItems.map((item) => (
             <div
@@ -288,89 +343,97 @@ const MultiSelectCheckbox: React.FC<MultiSelectCheckboxProps> = ({
         )}
       </div>
     </div>
-  )
-}
-
-
+  );
+};
 
 export default function TransactionDetailTestPage() {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
-  const router = useRouter()
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const router = useRouter();
 
   // ✅ เพิ่ม state สำหรับ current user
-  const [currentUser, setCurrentUser] = useState<any>(null)
-  const [isInitializing, setIsInitializing] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  const [transactions, setTransactions] = useState<any[]>([])
-  const [transactionDetails, setTransactionDetails] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [slots, setSlots] = useState<any[]>([])
-  const [users, setUsers] = useState<any[]>([])
-  const [userLockerGrants, setUserLockerGrants] = useState<any[]>([])
-
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactionDetails, setTransactionDetails] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [slots, setSlots] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [userLockerGrants, setUserLockerGrants] = useState<any[]>([]);
 
   // ✅ State สำหรับ Report
-  const [locations, setLocations] = useState<Location[]>([])
-  const [groupLocations, setGroupLocations] = useState<GroupLocation[]>([])
-  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
-  const [reportLoading, setReportLoading] = useState(false)
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [groupLocations, setGroupLocations] = useState<GroupLocation[]>([]);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
 
-  const [filteredUsers, setFilteredUsers] = useState<{ searchTerm: string }>({ searchTerm: '' })
-  const [filteredProducts, setFilteredProducts] = useState<{ searchTerm: string }>({ searchTerm: '' })
-
+  const [filteredUsers, setFilteredUsers] = useState<{ searchTerm: string }>({
+    searchTerm: "",
+  });
+  const [filteredProducts, setFilteredProducts] = useState<{
+    searchTerm: string;
+  }>({ searchTerm: "" });
 
   const [reportForm, setReportForm] = useState({
     location_id: "",
     group_location_id: "",
     start_date: "",
     end_date: "",
-    user_ids: [] as string[],      // ✅ เปลี่ยนเป็น array
-    product_ids: [] as string[],   // ✅ เปลี่ยนเป็น array
-  })
-  const [reportData, setReportData] = useState<ReportData | null>(null)
-  const [reportPreviewOpen, setReportPreviewOpen] = useState(false)
+    user_ids: [] as string[], // ✅ เปลี่ยนเป็น array
+    product_ids: [] as string[], // ✅ เปลี่ยนเป็น array
+  });
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [reportPreviewOpen, setReportPreviewOpen] = useState(false);
 
-  const [selectedSnapshots, setSelectedSnapshots] = useState<Snapshot[]>([])
-  const [isSnapshotDialogOpen, setIsSnapshotDialogOpen] = useState(false)
-  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false)
+  const [selectedSnapshots, setSelectedSnapshots] = useState<Snapshot[]>([]);
+  const [isSnapshotDialogOpen, setIsSnapshotDialogOpen] = useState(false);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [permissionError, setPermissionError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   // Current Transaction State
-  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null)
-  const [currentActivity, setCurrentActivity] = useState<string>("")
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
+  const [currentTransactionId, setCurrentTransactionId] = useState<
+    string | null
+  >(null);
+  const [currentActivity, setCurrentActivity] = useState<string>("");
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   // Dialogs
-  const [isCreateTransactionDialogOpen, setIsCreateTransactionDialogOpen] = useState(false)
-  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false)
-  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
-  const [isTransactionDetailDialogOpen, setIsTransactionDetailDialogOpen] = useState(false)
+  const [isCreateTransactionDialogOpen, setIsCreateTransactionDialogOpen] =
+    useState(false);
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isTransactionDetailDialogOpen, setIsTransactionDetailDialogOpen] =
+    useState(false);
 
-  const [selectedTransaction, setSelectedTransaction] = useState<TransactionDetail[] | null>(null);
-
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    TransactionDetail[] | null
+  >(null);
 
   // Loading states
-  const [createTransactionLoading, setCreateTransactionLoading] = useState(false)
-  const [addItemLoading, setAddItemLoading] = useState(false)
-  const [confirmLoading, setConfirmLoading] = useState(false)
-  const [cancelLoading, setCancelLoading] = useState(false)
+  const [createTransactionLoading, setCreateTransactionLoading] =
+    useState(false);
+  const [addItemLoading, setAddItemLoading] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
-  const [userSearchTerm, setUserSearchTerm] = useState('')
-  const [productSearchTerm, setProductSearchTerm] = useState('')
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
 
-  const [filteredUsersForReport, setFilteredUsersForReport] = useState<any[]>([])
+  const [filteredUsersForReport, setFilteredUsersForReport] = useState<any[]>(
+    [],
+  );
 
   // Forms
   const [createTransactionForm, setCreateTransactionForm] = useState({
     user_id: "",
     activity: "",
-  })
+  });
 
   const [addItemForm, setAddItemForm] = useState({
     product_id: "",
@@ -378,102 +441,167 @@ export default function TransactionDetailTestPage() {
     slot_id: "",
     amount: "",
     expired_at: "",
-  })
+  });
+
+  const [cloudinaryLogs, setCloudinaryLogs] = useState<
+    Record<string, string[]>
+  >({});
 
   // ฟังก์ชัน toggle expand/collapse
   const toggleRowExpansion = (transactionId: number) => {
-    setExpandedRows(prev => {
-      const newSet = new Set(prev)
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
       if (newSet.has(transactionId)) {
-        newSet.delete(transactionId)
+        newSet.delete(transactionId);
       } else {
-        newSet.add(transactionId)
+        newSet.add(transactionId);
       }
-      return newSet
-    })
-  }
+      return newSet;
+    });
+  };
 
   // ✅ 1. ย้าย fetchUsersForReport มาไว้ที่นี่ (นอก useEffect)
-  const fetchUsersForReport = async (locationId?: string, groupLocationId?: string) => {
+  const fetchUsersForReport = async (
+    locationId?: string,
+    groupLocationId?: string,
+  ) => {
     try {
-      let response
+      let response;
 
       if (locationId) {
-        response = await apiClient.get(`${API_URL}/user/getUsersByLocation?location_id=${locationId}`)
+        response = await apiClient.get(
+          `${API_URL}/user/getUsersByLocation?location_id=${locationId}`,
+        );
       } else if (groupLocationId) {
-        response = await apiClient.get(`${API_URL}/user/getUsersByGroup?group_location_id=${groupLocationId}`)
+        response = await apiClient.get(
+          `${API_URL}/user/getUsersByGroup?group_location_id=${groupLocationId}`,
+        );
       } else {
-        setFilteredUsersForReport([])
-        return
+        setFilteredUsersForReport([]);
+        return;
       }
 
-      setFilteredUsersForReport(Array.isArray(response.data.users) ? response.data.users : [])
+      setFilteredUsersForReport(
+        Array.isArray(response.data.users) ? response.data.users : [],
+      );
     } catch (error) {
-      console.error('Error fetching users for report:', error)
-      setFilteredUsersForReport([])
+      console.error("Error fetching users for report:", error);
+      setFilteredUsersForReport([]);
     }
-  }
+  };
 
   useEffect(() => {
     if (isReportDialogOpen) {
-      fetchUsersForReport(reportForm.location_id, reportForm.group_location_id)
+      fetchUsersForReport(reportForm.location_id, reportForm.group_location_id);
     }
-  }, [reportForm.location_id, reportForm.group_location_id, isReportDialogOpen])
+  }, [
+    reportForm.location_id,
+    reportForm.group_location_id,
+    isReportDialogOpen,
+  ]);
 
   // ✅ useEffect สำหรับ Authentication และ Initialization
   useEffect(() => {
     // ตรวจสอบ authentication
     if (!authService.isAuthenticated()) {
-      console.log('❌ Not authenticated, redirecting to signin...');
-      router.push('/signin');
+      console.log("❌ Not authenticated, redirecting to signin...");
+      router.push("/signin");
       return;
     }
 
-    const user = authService.getUser()
+    const user = authService.getUser();
 
     // เช็คว่า user object มีค่าและมี role
-    if (!user || typeof user.role === 'undefined') {
-      console.log('❌ Invalid user data, redirecting to signin...');
-      router.push('/signin');
+    if (!user || typeof user.role === "undefined") {
+      console.log("❌ Invalid user data, redirecting to signin...");
+      router.push("/signin");
       return;
     }
 
     // เก็บ user ใน state
-    setCurrentUser(user)
+    setCurrentUser(user);
 
     // Role 4 ไม่มีสิทธิ์เข้าถึง (ถ้ามี role 4)
     if (user.role === 4) {
-      router.push('/dashboard');
+      router.push("/dashboard");
       return;
     }
 
     // ✅ 2. เพิ่มฟังก์ชันดึง snapshots
     const fetchTransactionSnapshots = async (transaction_id: number) => {
       try {
-        setIsLoadingSnapshots(true)
+        setIsLoadingSnapshots(true);
 
         const response = await apiClient.get(
-          `${API_URL}/snapshot/getSnapshotsByTransaction/${transaction_id}`
-        )
+          `${API_URL}/snapshot/getSnapshotsByTransaction/${transaction_id}`,
+        );
 
-        console.log('📸 Fetched snapshots:', response.data.snapshots)
+        const snapshotsData = response.data.snapshots || [];
+        setSelectedSnapshots(snapshotsData);
 
-        setSelectedSnapshots(response.data.snapshots || [])
-        setIsSnapshotDialogOpen(true)
+        console.log("📸 Fetched snapshots:", response.data.snapshots);
 
+        //ส่วนที่เพิ่มใหม่: สั่งดึงรายชื่อไฟล์ Log จาก Cloudinary ทันที
+        // ล้างข้อมูลเก่าออกก่อน
+        setCloudinaryLogs({});
+
+        // หารายชื่อตู้ (Slot) ทั้งหมดที่ถูกเปิดในรายการนี้ (เผื่อเปิด 2 ช่องพร้อมกัน)
+        const uniqueSlots = Array.from(
+          new Set(
+            snapshotsData.map(
+              (s: Snapshot) => s.Transaction_detail?.Slot?.slot_id,
+            ),
+          ),
+        );
+
+        // วนลูปยิง API ไปดึงไฟล์ของแต่ละช่อง
+        uniqueSlots.forEach(async (slotId) => {
+          const snapshotOfSlot = snapshotsData.find(
+            (s: Snapshot) => s.Transaction_detail?.Slot?.slot_id === slotId,
+          );
+
+          if (snapshotOfSlot) {
+            // ประกอบร่าง Path โฟลเดอร์ให้ถูกต้อง
+            let dbPath = snapshotOfSlot.image_path;
+            const pathParts = dbPath.split("/");
+            if (pathParts.length >= 3 && !pathParts[2].startsWith("Txn_")) {
+              pathParts[2] = `Txn_${pathParts[2]}`;
+            }
+            const folderPath = pathParts.join("/");
+
+            // ยิง API ไปที่หลังบ้าน (Node.js) ที่เราเพิ่งสร้างเมื่อกี้
+            try {
+              const logRes = await apiClient.get(
+                `${API_URL}/snapshot/getFilesInFolder?path=${folderPath}`,
+              );
+              if (logRes.data && logRes.data.files) {
+                // เอาชื่อไฟล์มาเก็บใส่ State โดยแยกตาม Slot ID
+                setCloudinaryLogs((prev) => ({
+                  ...prev,
+                  [String(slotId)]: logRes.data.files,
+                }));
+              }
+            } catch (err) {
+              console.error(`ไม่สามารถดึงไฟล์ Log ของตู้ ${slotId} ได้:`, err);
+            }
+          }
+        });
+
+        setSelectedSnapshots(response.data.snapshots || []);
+        setIsSnapshotDialogOpen(true);
       } catch (error) {
-        console.error('Error fetching snapshots:', error)
-        alert('ไม่สามารถโหลดรูปภาพได้')
+        console.error("Error fetching snapshots:", error);
+        alert("ไม่สามารถโหลดรูปภาพได้");
       } finally {
-        setIsLoadingSnapshots(false)
+        setIsLoadingSnapshots(false);
       }
-    }
+    };
 
-    console.log('✅ User authenticated:', {
+    console.log("✅ User authenticated:", {
       role: user.role,
       groupLocationId: user.groupLocationId,
-      locationId: user.locationId
-    })
+      locationId: user.locationId,
+    });
 
     // Fetch data
     const fetchData = async () => {
@@ -485,233 +613,300 @@ export default function TransactionDetailTestPage() {
           fetchSlots(),
           fetchUserLockerGrants(),
           fetchUsers(),
-          fetchLocationsForReport() // ✅ เพิ่ม fetch locations สำหรับ report
+          fetchLocationsForReport(), // ✅ เพิ่ม fetch locations สำหรับ report
         ]);
       } catch (error) {
-        console.error('Error loading initial data:', error);
+        console.error("Error loading initial data:", error);
       } finally {
         setIsInitializing(false);
       }
     };
 
     fetchData();
-  }, [])
+  }, []);
 
   // ✅ Fetch locations สำหรับ Report Dialog
   const fetchLocationsForReport = async () => {
     try {
-      const user = authService.getUser()
+      const user = authService.getUser();
 
       if (user.role === 1) {
         // System Admin - ดึง Group Locations ทั้งหมด
-        const groupResponse = await apiClient.get(`${API_URL}/grouplocation/getAllGrouplocations`)
-        setGroupLocations(Array.isArray(groupResponse.data.groupLocations) ? groupResponse.data.groupLocations : [])
+        const groupResponse = await apiClient.get(
+          `${API_URL}/grouplocation/getAllGrouplocations`,
+        );
+        setGroupLocations(
+          Array.isArray(groupResponse.data.groupLocations)
+            ? groupResponse.data.groupLocations
+            : [],
+        );
 
         // ดึง Locations ทั้งหมด
-        const locResponse = await apiClient.get(`${API_URL}/location/getAllLocations`)
-        setLocations(Array.isArray(locResponse.data.locations) ? locResponse.data.locations : [])
-
+        const locResponse = await apiClient.get(
+          `${API_URL}/location/getAllLocations`,
+        );
+        setLocations(
+          Array.isArray(locResponse.data.locations)
+            ? locResponse.data.locations
+            : [],
+        );
       } else if (user.role === 2) {
         // Organize Admin - ดึง Locations ตาม group_location_id
         const response = await apiClient.get(
-          `${API_URL}/location/getLocationsByGroup?group_location_id=${user.groupLocationId}`
-        )
-        setLocations(Array.isArray(response.data.locations) ? response.data.locations : [])
-
+          `${API_URL}/location/getLocationsByGroup?group_location_id=${user.groupLocationId}`,
+        );
+        setLocations(
+          Array.isArray(response.data.locations) ? response.data.locations : [],
+        );
       } else if (user.role === 3) {
         // Department Admin - ใช้ location ของตัวเองอัตโนมัติ
         // ไม่ต้องดึง locations เพิ่มเติม
       }
     } catch (error) {
-      console.error('Fetch locations for report error:', error)
+      console.error("Fetch locations for report error:", error);
     }
-  }
+  };
 
   // ✅ แก้ไข fetchTransactions ให้เรียก API ตาม role
   const fetchTransactions = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
-      const user = authService.getUser()
+      const user = authService.getUser();
 
-      console.log('🔍 Fetching transactions for user:', {
+      console.log("🔍 Fetching transactions for user:", {
         role: user.role,
         groupLocationId: user.groupLocationId,
-        locationId: user.locationId
-      })
+        locationId: user.locationId,
+      });
 
-      let response
+      let response;
 
       // เรียก API ตาม role (แบบเดียวกับ location-management)
       if (user.role === 1) {
         // System Admin - เห็นทั้งหมด
-        response = await apiClient.get(`${API_URL}/transaction/getAllTransactions`)
-
+        response = await apiClient.get(
+          `${API_URL}/transaction/getAllTransactions`,
+        );
       } else if (user.role === 2) {
         // Organize Admin - เห็นตาม group_location_id
         response = await apiClient.get(
-          `${API_URL}/transaction/getTransactionsByGroup?group_location_id=${user.groupLocationId}`
-        )
-
+          `${API_URL}/transaction/getTransactionsByGroup?group_location_id=${user.groupLocationId}`,
+        );
       } else if (user.role === 3) {
         // Department Admin - เห็นตาม location_id
         response = await apiClient.get(
-          `${API_URL}/transaction/getTransactionsByLocation?location_id=${user.locationId}`
-        )
-
+          `${API_URL}/transaction/getTransactionsByLocation?location_id=${user.locationId}`,
+        );
       } else {
         // Role อื่นๆ ไม่มีสิทธิ์
-        setTransactions([])
-        return
+        setTransactions([]);
+        return;
       }
 
       // จัดการข้อมูลที่ได้รับ
       const transactionsData = Array.isArray(response.data.transactions)
         ? response.data.transactions
-        : []
+        : [];
 
-      console.log('✅ Fetched transactions:', transactionsData.length)
-      setTransactions(transactionsData)
-
+      console.log("✅ Fetched transactions:", transactionsData.length);
+      setTransactions(transactionsData);
     } catch (error: any) {
-      console.error('Fetch transactions error:', error)
+      console.error("Fetch transactions error:", error);
 
       // จัดการ error แบบเฉพาะเจาะจง
       if (error.response?.status === 403) {
-        setError('คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้')
+        setError("คุณไม่มีสิทธิ์เข้าถึงข้อมูลนี้");
       } else if (error.response?.status === 401) {
-        setError('กรุณาเข้าสู่ระบบใหม่')
-        router.push('/signin')
+        setError("กรุณาเข้าสู่ระบบใหม่");
+        router.push("/signin");
       } else if (error.response?.status === 404) {
-        setError('ไม่พบข้อมูล Transaction')
-        setTransactions([])
+        setError("ไม่พบข้อมูล Transaction");
+        setTransactions([]);
       } else {
-        setError('ไม่สามารถดึงข้อมูล Transaction ได้')
+        setError("ไม่สามารถดึงข้อมูล Transaction ได้");
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const fetchTransactionDetails = async () => {
     try {
-      const response = await apiClient.get(`${API_URL}/transactionDetail/getAllTransactionDetails`)
+      const response = await apiClient.get(
+        `${API_URL}/transactionDetail/getAllTransactionDetails`,
+      );
 
-      const data = response.data
-      setTransactionDetails(Array.isArray(data.details) ? data.details : [])
+      const data = response.data;
+      setTransactionDetails(Array.isArray(data.details) ? data.details : []);
     } catch (error) {
-      console.error('Fetch transaction details error:', error)
+      console.error("Fetch transaction details error:", error);
     }
-  }
+  };
 
   const fetchUsers = async () => {
     try {
-      const response = await apiClient.get(`${API_URL}/user/getAllUsers`)
+      const response = await apiClient.get(`${API_URL}/user/getAllUsers`);
 
-      const data = response.data
-      setUsers(Array.isArray(data.users) ? data.users : [])
+      const data = response.data;
+      setUsers(Array.isArray(data.users) ? data.users : []);
     } catch (error) {
-      console.error('Fetch users error:', error)
+      console.error("Fetch users error:", error);
     }
-  }
+  };
 
   const fetchProducts = async () => {
     try {
-      const response = await apiClient.get(`${API_URL}/product/getAllProducts`)
+      const response = await apiClient.get(`${API_URL}/product/getAllProducts`);
 
-      const data = response.data
-      setProducts(Array.isArray(data.products) ? data.products : [])
+      const data = response.data;
+      setProducts(Array.isArray(data.products) ? data.products : []);
     } catch (error) {
-      console.error('Fetch products error:', error)
+      console.error("Fetch products error:", error);
     }
-  }
+  };
 
   // ✅ 2. เพิ่มฟังก์ชันดึง snapshots
   const fetchTransactionSnapshots = async (transaction_id: number) => {
     try {
-      setIsLoadingSnapshots(true)
+      setIsLoadingSnapshots(true);
 
       const response = await apiClient.get(
-        `${API_URL}/snapshot/getSnapshotsByTransaction/${transaction_id}`
-      )
+        `${API_URL}/snapshot/getSnapshotsByTransaction/${transaction_id}`,
+      );
 
-      console.log('📸 Fetched snapshots:', response.data.snapshots)
+      const snapshotsData = response.data.snapshots || [];
+      setSelectedSnapshots(snapshotsData);
 
-      setSelectedSnapshots(response.data.snapshots || [])
-      setIsSnapshotDialogOpen(true)
+      console.log("📸 Fetched snapshots:", response.data.snapshots);
 
+      //ส่วนที่เพิ่มใหม่: สั่งดึงรายชื่อไฟล์ Log จาก Cloudinary ทันที
+      // ล้างข้อมูลเก่าออกก่อน
+      setCloudinaryLogs({});
+
+      // หารายชื่อตู้ (Slot) ทั้งหมดที่ถูกเปิดในรายการนี้ (เผื่อเปิด 2 ช่องพร้อมกัน)
+      const uniqueSlots = Array.from(
+        new Set(
+          snapshotsData.map(
+            (s: Snapshot) => s.Transaction_detail?.Slot?.slot_id,
+          ),
+        ),
+      );
+
+      // วนลูปยิง API ไปดึงไฟล์ของแต่ละช่อง
+      uniqueSlots.forEach(async (slotId) => {
+        const snapshotOfSlot = snapshotsData.find(
+          (s: Snapshot) => s.Transaction_detail?.Slot?.slot_id === slotId,
+        );
+
+        if (snapshotOfSlot) {
+          // ประกอบร่าง Path โฟลเดอร์ให้ถูกต้อง
+          let dbPath = snapshotOfSlot.image_path;
+          const pathParts = dbPath.split("/");
+          if (pathParts.length >= 3 && !pathParts[2].startsWith("Txn_")) {
+            pathParts[2] = `Txn_${pathParts[2]}`;
+          }
+          const folderPath = pathParts.join("/");
+
+          // ยิง API ไปที่หลังบ้าน (Node.js) ที่เราเพิ่งสร้างเมื่อกี้
+          try {
+            const logRes = await apiClient.get(
+              `${API_URL}/snapshot/getFilesInFolder?path=${folderPath}`,
+            );
+            if (logRes.data && logRes.data.files) {
+              // เอาชื่อไฟล์มาเก็บใส่ State โดยแยกตาม Slot ID
+              setCloudinaryLogs((prev) => ({
+                ...prev,
+                [String(slotId)]: logRes.data.files,
+              }));
+            }
+          } catch (err) {
+            console.error(`ไม่สามารถดึงไฟล์ Log ของตู้ ${slotId} ได้:`, err);
+          }
+        }
+      });
+
+      setSelectedSnapshots(response.data.snapshots || []);
+      setIsSnapshotDialogOpen(true);
     } catch (error) {
-      console.error('Error fetching snapshots:', error)
-      alert('ไม่สามารถโหลดรูปภาพได้')
+      console.error("Error fetching snapshots:", error);
+      alert("ไม่สามารถโหลดรูปภาพได้");
     } finally {
-      setIsLoadingSnapshots(false)
+      setIsLoadingSnapshots(false);
     }
-  }
+  };
 
   const fetchSlots = async () => {
     try {
-      const response = await apiClient.get(`${API_URL}/slot/getAllSlot`)
+      const response = await apiClient.get(`${API_URL}/slot/getAllSlot`);
 
-      const data = response.data
-      setSlots(Array.isArray(data.slots) ? data.slots : [])
+      const data = response.data;
+      setSlots(Array.isArray(data.slots) ? data.slots : []);
     } catch (error) {
-      console.error('Fetch slots error:', error)
+      console.error("Fetch slots error:", error);
     }
-  }
+  };
 
   const fetchUserLockerGrants = async () => {
     try {
-      const response = await apiClient.get(`${API_URL}/userLockerGrant/getAllUserLockerGrant`)
+      const response = await apiClient.get(
+        `${API_URL}/userLockerGrant/getAllUserLockerGrant`,
+      );
 
-      const data = response.data
-      setUserLockerGrants(Array.isArray(data) ? data : [])
+      const data = response.data;
+      setUserLockerGrants(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('Fetch user locker grants error:', error)
+      console.error("Fetch user locker grants error:", error);
     }
-  }
+  };
 
   // ========================================
   // ตรวจสอบสิทธิ์ของ User
   // ========================================
   const checkUserPermission = (userId: string, activity: string): boolean => {
     // หา UserLockerGrant ของ user นี้
-    const userGrant = userLockerGrants.find(grant => grant.user_id === userId)
+    const userGrant = userLockerGrants.find(
+      (grant) => grant.user_id === userId,
+    );
 
     if (!userGrant) {
-      setPermissionError('ไม่พบสิทธิ์การเข้าถึงตู้ของผู้ใช้นี้')
-      return false
+      setPermissionError("ไม่พบสิทธิ์การเข้าถึงตู้ของผู้ใช้นี้");
+      return false;
     }
 
     // เช็คสิทธิ์ตาม activity
-    if (activity === 'เบิกยา') {
+    if (activity === "เบิกยา") {
       if (userGrant.permission_withdraw !== 1) {
-        setPermissionError('ผู้ใช้นี้ไม่มีสิทธิ์ในการเบิกยา (permission_withdraw = 0)')
-        return false
+        setPermissionError(
+          "ผู้ใช้นี้ไม่มีสิทธิ์ในการเบิกยา (permission_withdraw = 0)",
+        );
+        return false;
       }
-    } else if (activity === 'เติมยา') {
+    } else if (activity === "เติมยา") {
       if (userGrant.permission_restock !== 1) {
-        setPermissionError('ผู้ใช้นี้ไม่มีสิทธิ์ในการเติมยา (permission_restock = 0)')
-        return false
+        setPermissionError(
+          "ผู้ใช้นี้ไม่มีสิทธิ์ในการเติมยา (permission_restock = 0)",
+        );
+        return false;
       }
     }
 
-    setPermissionError(null)
-    return true
-  }
+    setPermissionError(null);
+    return true;
+  };
 
   const handleViewTransactionDetail = async (transaction_id: number) => {
     try {
       const response = await apiClient.get(
-        `${API_URL}/transactionDetail/getTransactionDetailByTransactionId/${transaction_id}`
+        `${API_URL}/transactionDetail/getTransactionDetailByTransactionId/${transaction_id}`,
       );
 
-      const data = response.data
+      const data = response.data;
       setSelectedTransaction(data);
       setIsTransactionDetailDialogOpen(true);
-
     } catch (error) {
-      console.error('Error fetching transaction details:', error);
+      console.error("Error fetching transaction details:", error);
     }
   };
 
@@ -720,68 +915,75 @@ export default function TransactionDetailTestPage() {
   // ========================================
   const handleCreateTransaction = async () => {
     try {
-      setCreateTransactionLoading(true)
-      setPermissionError(null)
+      setCreateTransactionLoading(true);
+      setPermissionError(null);
 
       // เช็คสิทธิ์ก่อนสร้าง Transaction
       const hasPermission = checkUserPermission(
         createTransactionForm.user_id,
-        createTransactionForm.activity
-      )
+        createTransactionForm.activity,
+      );
 
       if (!hasPermission) {
-        setCreateTransactionLoading(false)
-        return
+        setCreateTransactionLoading(false);
+        return;
       }
 
-      const response = await apiClient.post(`${API_URL}/transaction/createTransaction`, {
-        user_id: createTransactionForm.user_id,
-        activity: createTransactionForm.activity,
-        status: "กำลังดำเนินการ"
-      })
+      const response = await apiClient.post(
+        `${API_URL}/transaction/createTransaction`,
+        {
+          user_id: createTransactionForm.user_id,
+          activity: createTransactionForm.activity,
+          status: "กำลังดำเนินการ",
+        },
+      );
 
-      const data = response.data
+      const data = response.data;
 
       // Set current transaction
-      setCurrentTransactionId(data.transaction.transaction_id)
-      setCurrentActivity(data.transaction.activity)
-      setCartItems([])
+      setCurrentTransactionId(data.transaction.transaction_id);
+      setCurrentActivity(data.transaction.activity);
+      setCartItems([]);
 
-      await fetchTransactions()
-      setIsCreateTransactionDialogOpen(false)
-      setCreateTransactionForm({ user_id: "", activity: "" })
-      alert(`สร้าง Transaction สำเร็จ! ID: ${data.transaction.transaction_id}`)
-
+      await fetchTransactions();
+      setIsCreateTransactionDialogOpen(false);
+      setCreateTransactionForm({ user_id: "", activity: "" });
+      alert(`สร้าง Transaction สำเร็จ! ID: ${data.transaction.transaction_id}`);
     } catch (error: any) {
-      console.error('Error creating transaction:', error)
-      alert(`เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`)
+      console.error("Error creating transaction:", error);
+      alert(
+        `เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`,
+      );
     } finally {
-      setCreateTransactionLoading(false)
+      setCreateTransactionLoading(false);
     }
-  }
+  };
 
   // ========================================
   // 2. เพิ่มรายการยาในตะกร้า
   // ========================================
   const handleAddItemToCart = async () => {
     if (!currentTransactionId) {
-      alert('กรุณาสร้าง Transaction ก่อน')
-      return
+      alert("กรุณาสร้าง Transaction ก่อน");
+      return;
     }
 
     try {
-      setAddItemLoading(true)
+      setAddItemLoading(true);
 
-      const response = await apiClient.post(`${API_URL}/transactionDetail/addItemToCart`, {
-        transaction_id: currentTransactionId,
-        product_id: addItemForm.product_id,
-        lot_id: addItemForm.lot_id,
-        slot_id: addItemForm.slot_id,
-        amount: parseInt(addItemForm.amount),
-        expired_at: addItemForm.expired_at || null
-      })
+      const response = await apiClient.post(
+        `${API_URL}/transactionDetail/addItemToCart`,
+        {
+          transaction_id: currentTransactionId,
+          product_id: addItemForm.product_id,
+          lot_id: addItemForm.lot_id,
+          slot_id: addItemForm.slot_id,
+          amount: parseInt(addItemForm.amount),
+          expired_at: addItemForm.expired_at || null,
+        },
+      );
 
-      const data = response.data
+      const data = response.data;
 
       // เพิ่มรายการในตะกร้า
       const newCartItem: CartItem = {
@@ -792,164 +994,175 @@ export default function TransactionDetailTestPage() {
         amount: data.data.amount,
         currentSlotStockAmount: data.data.currentSlotStockAmount,
         action: data.data.action,
-        was_created: data.data.action === 'สร้าง slot_stock ใหม่',
-        amount_added: data.data.amount
-      }
+        was_created: data.data.action === "สร้าง slot_stock ใหม่",
+        amount_added: data.data.amount,
+      };
 
-      setCartItems([...cartItems, newCartItem])
+      setCartItems([...cartItems, newCartItem]);
 
-      setIsAddItemDialogOpen(false)
+      setIsAddItemDialogOpen(false);
       setAddItemForm({
         product_id: "",
         lot_id: "",
         slot_id: "",
         amount: "",
-        expired_at: ""
-      })
-
-
+        expired_at: "",
+      });
     } catch (error: any) {
-      console.error('Error adding item:', error)
-      alert(`เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`)
+      console.error("Error adding item:", error);
+      alert(
+        `เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`,
+      );
     } finally {
-      setAddItemLoading(false)
+      setAddItemLoading(false);
     }
-  }
+  };
 
   // ========================================
   // 3. ลบรายการจากตะกร้า
   // ========================================
   const handleRemoveCartItem = async (item: CartItem, index: number) => {
     if (!currentTransactionId) {
-      alert('ไม่พบ Transaction ID')
-      return
+      alert("ไม่พบ Transaction ID");
+      return;
     }
 
     try {
-      console.log('Removing item from cart:', {
+      console.log("Removing item from cart:", {
         transaction_id: currentTransactionId,
         slot_stock_id: item.slot_stock_id,
         amount_to_remove: item.amount_added || item.amount,
-        was_created: item.was_created
-      })
+        was_created: item.was_created,
+      });
 
-      const response = await apiClient.post(`${API_URL}/transactionDetail/removeItemFromTempCart`, {
-        transaction_id: currentTransactionId,
-        slot_stock_id: item.slot_stock_id,
-        amount_to_remove: item.amount_added || item.amount,
-        was_created: item.was_created
-      })
+      const response = await apiClient.post(
+        `${API_URL}/transactionDetail/removeItemFromTempCart`,
+        {
+          transaction_id: currentTransactionId,
+          slot_stock_id: item.slot_stock_id,
+          amount_to_remove: item.amount_added || item.amount,
+          was_created: item.was_created,
+        },
+      );
 
-      const data = response.data
+      const data = response.data;
 
       // ลบออกจาก cartItems
-      const newCartItems = cartItems.filter((_, i) => i !== index)
-      setCartItems(newCartItems)
+      const newCartItems = cartItems.filter((_, i) => i !== index);
+      setCartItems(newCartItems);
 
-      alert('ลบรายการออกจากตะกร้าสำเร็จ')
-
+      alert("ลบรายการออกจากตะกร้าสำเร็จ");
     } catch (error: any) {
-      console.error('Error removing item:', error)
-      alert(`เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`)
+      console.error("Error removing item:", error);
+      alert(
+        `เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`,
+      );
     }
-  }
+  };
 
   // ========================================
   // 4. ยืนยัน Transaction
   // ========================================
   const handleConfirmTransaction = async () => {
     if (!currentTransactionId || cartItems.length === 0) {
-      alert('ไม่มีรายการในตะกร้า')
-      return
+      alert("ไม่มีรายการในตะกร้า");
+      return;
     }
 
     try {
-      setConfirmLoading(true)
+      setConfirmLoading(true);
 
-      const items = cartItems.map(item => ({
+      const items = cartItems.map((item) => ({
         slot_stock_id: item.slot_stock_id,
         product_id: item.product_id,
         slot_id: item.slot_id,
-        amount: item.amount_added || item.amount
-      }))
+        amount: item.amount_added || item.amount,
+      }));
 
-      const response = await apiClient.post(`${API_URL}/transactionDetail/confirmTransaction`, {
-        transaction_id: currentTransactionId,
-        items: items
-      })
+      const response = await apiClient.post(
+        `${API_URL}/transactionDetail/confirmTransaction`,
+        {
+          transaction_id: currentTransactionId,
+          items: items,
+        },
+      );
 
-      const data = response.data
+      const data = response.data;
 
       // Reset state
-      setCurrentTransactionId(null)
-      setCurrentActivity("")
-      setCartItems([])
+      setCurrentTransactionId(null);
+      setCurrentActivity("");
+      setCartItems([]);
 
-      await fetchTransactions()
-      await fetchTransactionDetails()
+      await fetchTransactions();
+      await fetchTransactionDetails();
 
-      setIsConfirmDialogOpen(false)
-      alert('ยืนยันรายการสำเร็จ')
-
+      setIsConfirmDialogOpen(false);
+      alert("ยืนยันรายการสำเร็จ");
     } catch (error: any) {
-      console.error('Error confirming transaction:', error)
-      alert(`เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`)
+      console.error("Error confirming transaction:", error);
+      alert(
+        `เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`,
+      );
     } finally {
-      setConfirmLoading(false)
+      setConfirmLoading(false);
     }
-  }
+  };
 
   // ========================================
   // 5. ยกเลิก Transaction
   // ========================================
   const handleCancelTransaction = async () => {
     if (!currentTransactionId) {
-      alert('ไม่มี Transaction ที่เปิดอยู่')
-      return
+      alert("ไม่มี Transaction ที่เปิดอยู่");
+      return;
     }
 
     try {
-      setCancelLoading(true)
-      const rollbackItems = cartItems.map(item => ({
+      setCancelLoading(true);
+      const rollbackItems = cartItems.map((item) => ({
         slot_stock_id: item.slot_stock_id,
         amount_to_rollback: item.amount_added || item.amount,
         was_created: item.was_created,
         slot_id: item.slot_id,
         product_id: item.product_id,
         lot_id: item.lot_id,
+      }));
 
-      }))
-
-      console.log('Canceling transaction:', {
+      console.log("Canceling transaction:", {
         transaction_id: currentTransactionId,
         rollback_items: rollbackItems,
-        endpoint: `${API_URL}/transactionDetail/cancelTransaction`
-      })
+        endpoint: `${API_URL}/transactionDetail/cancelTransaction`,
+      });
 
-      const response = await apiClient.post(`${API_URL}/transactionDetail/cancelTransaction`, {
-        transaction_id: currentTransactionId,
-        rollback_items: rollbackItems
-      })
+      const response = await apiClient.post(
+        `${API_URL}/transactionDetail/cancelTransaction`,
+        {
+          transaction_id: currentTransactionId,
+          rollback_items: rollbackItems,
+        },
+      );
 
-      const data = response.data
+      const data = response.data;
 
       // Reset state
-      setCurrentTransactionId(null)
-      setCurrentActivity("")
-      setCartItems([])
+      setCurrentTransactionId(null);
+      setCurrentActivity("");
+      setCartItems([]);
 
-      await fetchTransactions()
+      await fetchTransactions();
 
-      setIsCancelDialogOpen(false)
-      alert('ยกเลิกรายการสำเร็จ')
-
+      setIsCancelDialogOpen(false);
+      alert("ยกเลิกรายการสำเร็จ");
     } catch (error: any) {
-      console.error('Error canceling transaction:', error)
-      alert(`เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`)
+      console.error("Error canceling transaction:", error);
+      alert(
+        `เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`,
+      );
     } finally {
-      setCancelLoading(false)
+      setCancelLoading(false);
     }
-  }
+  };
 
   // ========================================
   // ✅ ฟังก์ชันสำหรับออกใบรีพอร์ต
@@ -963,369 +1176,406 @@ export default function TransactionDetailTestPage() {
       group_location_id: "",
       start_date: "",
       end_date: "",
-      user_ids: [],      // reset เป็น array ว่าง
-      product_ids: [],   // reset เป็น array ว่าง
-    })
-    setUserSearchTerm('')       // ✅ reset search
-    setProductSearchTerm('')    // ✅ reset search
-    setFilteredUsersForReport([])
-    setReportData(null)
-    setIsReportDialogOpen(true)
-  }
+      user_ids: [], // reset เป็น array ว่าง
+      product_ids: [], // reset เป็น array ว่าง
+    });
+    setUserSearchTerm(""); // ✅ reset search
+    setProductSearchTerm(""); // ✅ reset search
+    setFilteredUsersForReport([]);
+    setReportData(null);
+    setIsReportDialogOpen(true);
+  };
 
   const handleFetchReportData = async () => {
     try {
-      setReportLoading(true)
+      setReportLoading(true);
 
-      let queryParams = ''
-      const params: string[] = []
+      let queryParams = "";
+      const params: string[] = [];
 
-      if (reportForm.start_date) params.push(`start_date=${reportForm.start_date}`)
-      if (reportForm.end_date) params.push(`end_date=${reportForm.end_date}`)
+      if (reportForm.start_date)
+        params.push(`start_date=${reportForm.start_date}`);
+      if (reportForm.end_date) params.push(`end_date=${reportForm.end_date}`);
 
       if (currentUser?.role === 3) {
-        params.push(`location_id=${currentUser.locationId}`)
+        params.push(`location_id=${currentUser.locationId}`);
       } else if (reportForm.location_id) {
-        params.push(`location_id=${reportForm.location_id}`)
+        params.push(`location_id=${reportForm.location_id}`);
       } else if (reportForm.group_location_id) {
-        params.push(`group_location_id=${reportForm.group_location_id}`)
+        params.push(`group_location_id=${reportForm.group_location_id}`);
       }
 
       if (reportForm.user_ids.length > 0) {
-        params.push(`user_ids=${reportForm.user_ids.join(',')}`)
+        params.push(`user_ids=${reportForm.user_ids.join(",")}`);
       }
       if (reportForm.product_ids.length > 0) {
-        params.push(`product_ids=${reportForm.product_ids.join(',')}`)
+        params.push(`product_ids=${reportForm.product_ids.join(",")}`);
       }
 
-      queryParams = params.join('&')
+      queryParams = params.join("&");
 
-      const response = await apiClient.get(`${API_URL}/transaction/getReportData?${queryParams}`)
-      setReportData(response.data.report)
-      setReportPreviewOpen(true)
+      const response = await apiClient.get(
+        `${API_URL}/transaction/getReportData?${queryParams}`,
+      );
+      setReportData(response.data.report);
+      setReportPreviewOpen(true);
     } catch (error: any) {
-      console.error('Error fetching report data:', error)
-      alert(`เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`)
+      console.error("Error fetching report data:", error);
+      alert(
+        `เกิดข้อผิดพลาด: ${error.response?.data?.message || error.message}`,
+      );
     } finally {
-      setReportLoading(false)
+      setReportLoading(false);
     }
-  }
+  };
 
   // สร้างและดาวน์โหลด CSV
   const handleDownloadCSV = () => {
     if (!reportData || !currentUser) {
-      alert('ไม่มีข้อมูลสำหรับสร้างรีพอร์ต')
-      return
+      alert("ไม่มีข้อมูลสำหรับสร้างรีพอร์ต");
+      return;
     }
 
-    const reporterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'ไม่ระบุ'
+    const reporterName =
+      `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim() ||
+      "ไม่ระบุ";
 
     const formatDate = (dateStr: string) => {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('th-TH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    }
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("th-TH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    };
 
-    const generatedDate = new Date().toLocaleString('th-TH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
+    const generatedDate = new Date().toLocaleString("th-TH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
-    let csvContent = ''
+    let csvContent = "";
 
     // ========================================
     // HEADER
     // ========================================
-    csvContent += 'รายงานสรุปการเบิก-เติมยา\n'
-    csvContent += `สถานที่,${reportData.location_name}\n`
-    csvContent += `กลุ่มสถานที่,${reportData.group_location_name}\n`
-    const startLabel = reportData.start_date ? formatDate(reportData.start_date) : 'ทั้งหมด'
-    const endLabel = reportData.end_date ? formatDate(reportData.end_date) : 'ทั้งหมด'
-    csvContent += `ช่วงเวลา,${startLabel} - ${endLabel}\n`
-    csvContent += `ผู้ออกรีพอร์ต,${reporterName}\n`
-    csvContent += `วันที่ออกรีพอร์ต,${generatedDate}\n`
+    csvContent += "รายงานสรุปการเบิก-เติมยา\n";
+    csvContent += `สถานที่,${reportData.location_name}\n`;
+    csvContent += `กลุ่มสถานที่,${reportData.group_location_name}\n`;
+    const startLabel = reportData.start_date
+      ? formatDate(reportData.start_date)
+      : "ทั้งหมด";
+    const endLabel = reportData.end_date
+      ? formatDate(reportData.end_date)
+      : "ทั้งหมด";
+    csvContent += `ช่วงเวลา,${startLabel} - ${endLabel}\n`;
+    csvContent += `ผู้ออกรีพอร์ต,${reporterName}\n`;
+    csvContent += `วันที่ออกรีพอร์ต,${generatedDate}\n`;
 
     // ✅ Filter info
     if (reportData.filters?.user_names) {
-      csvContent += `ผู้ทำรายการ,${reportData.filters.user_names}\n`
+      csvContent += `ผู้ทำรายการ,${reportData.filters.user_names}\n`;
     }
     if (reportData.filters?.product_names) {
-      csvContent += `รายการยา,${reportData.filters.product_names}\n`
+      csvContent += `รายการยา,${reportData.filters.product_names}\n`;
     }
 
-    csvContent += '\n'
+    csvContent += "\n";
 
     // ========================================
     // SECTION 1: SUMMARY (by product)
     // ========================================
-    csvContent += '=== สรุปรวมตามยา ===\n'
-    csvContent += 'ลำดับ,รหัสยา,ชื่อยา,จำนวนเติมยา,จำนวนเบิกยา,จำนวนคงเหลือ\n'
+    csvContent += "=== สรุปรวมตามยา ===\n";
+    csvContent += "ลำดับ,รหัสยา,ชื่อยา,จำนวนเติมยา,จำนวนเบิกยา,จำนวนคงเหลือ\n";
 
     if (reportData.summary_items && reportData.summary_items.length > 0) {
       reportData.summary_items.forEach((item: any, index: number) => {
-        csvContent += `${index + 1},${item.product_id},${item.product_name},${item.total_restock},${item.total_withdraw},${item.current_stock}\n`
-      })
+        csvContent += `${index + 1},${item.product_id},${item.product_name},${item.total_restock},${item.total_withdraw},${item.current_stock}\n`;
+      });
     } else {
-      csvContent += 'ไม่มีข้อมูล\n'
+      csvContent += "ไม่มีข้อมูล\n";
     }
 
-    csvContent += '\n'
+    csvContent += "\n";
 
     // ========================================
     // SECTION 2: DETAILED TRANSACTIONS
     // ========================================
-    csvContent += '=== รายละเอียดการทำรายการ ===\n'
+    csvContent += "=== รายละเอียดการทำรายการ ===\n";
 
-    if (reportData.detailed_transactions && reportData.detailed_transactions.length > 0) {
-      reportData.detailed_transactions.forEach((transaction: any, idx: number) => {
-        csvContent += `\nTransaction #${idx + 1}\n`
-        csvContent += `Transaction ID,${transaction.transaction_id}\n`
-        csvContent += `ผู้ทำรายการ,${transaction.user_name} (${transaction.user_role})\n`
-        csvContent += `กิจกรรม,${transaction.activity}\n`
-        csvContent += `สถานที่,${transaction.location_name}\n`
-        csvContent += `กลุ่มสถานที่,${transaction.group_location_name}\n`
-        csvContent += `วันที่,${new Date(transaction.created_at).toLocaleString('th-TH')}\n`
-        csvContent += `จำนวนรวม,${transaction.total_amount} ชิ้น\n`
-        csvContent += '\nรายการสินค้า:\n'
-        csvContent += 'ลำดับ,ชื่อยา,รหัสยา,Lot ID,Slot,Locker,จำนวน\n'
+    if (
+      reportData.detailed_transactions &&
+      reportData.detailed_transactions.length > 0
+    ) {
+      reportData.detailed_transactions.forEach(
+        (transaction: any, idx: number) => {
+          csvContent += `\nTransaction #${idx + 1}\n`;
+          csvContent += `Transaction ID,${transaction.transaction_id}\n`;
+          csvContent += `ผู้ทำรายการ,${transaction.user_name} (${transaction.user_role})\n`;
+          csvContent += `กิจกรรม,${transaction.activity}\n`;
+          csvContent += `สถานที่,${transaction.location_name}\n`;
+          csvContent += `กลุ่มสถานที่,${transaction.group_location_name}\n`;
+          csvContent += `วันที่,${new Date(transaction.created_at).toLocaleString("th-TH")}\n`;
+          csvContent += `จำนวนรวม,${transaction.total_amount} ชิ้น\n`;
+          csvContent += "\nรายการสินค้า:\n";
+          csvContent += "ลำดับ,ชื่อยา,รหัสยา,Lot ID,Slot,Locker,จำนวน\n";
 
-        transaction.items.forEach((item: any, i: number) => {
-          csvContent += `${i + 1},${item.product_name},${item.product_id},${item.lot_id},Slot #${item.slot_id},Locker #${item.locker_id},${item.amount}\n`
-        })
-      })
+          transaction.items.forEach((item: any, i: number) => {
+            csvContent += `${i + 1},${item.product_name},${item.product_id},${item.lot_id},Slot #${item.slot_id},Locker #${item.locker_id},${item.amount}\n`;
+          });
+        },
+      );
     } else {
-      csvContent += 'ไม่มีรายการทำรายการ\n'
+      csvContent += "ไม่มีรายการทำรายการ\n";
     }
 
-    csvContent += '\n'
+    csvContent += "\n";
 
     // ========================================
     // SUMMARY
     // ========================================
-    csvContent += '=== สรุปภาพรวม ===\n'
-    csvContent += `จำนวนรายการยาทั้งหมด,${reportData.summary?.total_products || 0} รายการ\n`
-    csvContent += `จำนวนเติมยารวม,${reportData.summary?.total_restock_all || 0} ชิ้น (${reportData.summary?.total_restock_transactions || 0} ครั้ง)\n`
-    csvContent += `จำนวนเบิกยารวม,${reportData.summary?.total_withdraw_all || 0} ชิ้น (${reportData.summary?.total_withdraw_transactions || 0} ครั้ง)\n`
-    csvContent += `จำนวนคงเหลือรวม,${reportData.summary?.total_current_stock || 0} ชิ้น\n`
-    csvContent += `จำนวน Transaction ทั้งหมด,${reportData.summary?.total_transactions || 0} รายการ\n`
-    csvContent += `จำนวนรายการสินค้าทั้งหมด,${reportData.summary?.total_transaction_items || 0} รายการ\n`
+    csvContent += "=== สรุปภาพรวม ===\n";
+    csvContent += `จำนวนรายการยาทั้งหมด,${reportData.summary?.total_products || 0} รายการ\n`;
+    csvContent += `จำนวนเติมยารวม,${reportData.summary?.total_restock_all || 0} ชิ้น (${reportData.summary?.total_restock_transactions || 0} ครั้ง)\n`;
+    csvContent += `จำนวนเบิกยารวม,${reportData.summary?.total_withdraw_all || 0} ชิ้น (${reportData.summary?.total_withdraw_transactions || 0} ครั้ง)\n`;
+    csvContent += `จำนวนคงเหลือรวม,${reportData.summary?.total_current_stock || 0} ชิ้น\n`;
+    csvContent += `จำนวน Transaction ทั้งหมด,${reportData.summary?.total_transactions || 0} รายการ\n`;
+    csvContent += `จำนวนรายการสินค้าทั้งหมด,${reportData.summary?.total_transaction_items || 0} รายการ\n`;
 
     // ========================================
     // DOWNLOAD
     // ========================================
-    const BOM = '\uFEFF'
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
 
-    const startDateFormatted = reportData.start_date?.replace(/-/g, '') || 'all'
-    const endDateFormatted = reportData.end_date?.replace(/-/g, '') || 'all'
+    const startDateFormatted =
+      reportData.start_date?.replace(/-/g, "") || "all";
+    const endDateFormatted = reportData.end_date?.replace(/-/g, "") || "all";
 
-    let filename = `รายงานยา_${reportData.location_name}_${startDateFormatted}-${endDateFormatted}`
+    let filename = `รายงานยา_${reportData.location_name}_${startDateFormatted}-${endDateFormatted}`;
 
     if (reportData.filters?.user_names) {
-      filename += `_${reportData.filters.user_names}`
+      filename += `_${reportData.filters.user_names}`;
     }
     if (reportData.filters?.product_names) {
-      filename += `_${reportData.filters.product_names}`
+      filename += `_${reportData.filters.product_names}`;
     }
 
-    filename += '.csv'
+    filename += ".csv";
 
-    const link = document.createElement('a')
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', filename)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-    alert('ดาวน์โหลดรีพอร์ต CSV สำเร็จ')
-  }
+    alert("ดาวน์โหลดรีพอร์ต CSV สำเร็จ");
+  };
 
   // ✅ สร้างและดาวน์โหลด PDF (รองรับภาษาไทย)
   // ✅ PDF Generation - แสดงทั้ง Summary และ Detailed ในรีพอร์ตเดียว
   const handleDownloadPDF = () => {
     if (!reportData || !currentUser) {
-      alert('ไม่มีข้อมูลสำหรับสร้างรีพอร์ต')
-      return
+      alert("ไม่มีข้อมูลสำหรับสร้างรีพอร์ต");
+      return;
     }
 
     // สร้าง PDF document
-    const doc = new jsPDF('p', 'mm', 'a4')
+    const doc = new jsPDF("p", "mm", "a4");
 
     // ⭐ เพิ่ม Thai Font (THSarabunNew)
     try {
-      if (typeof thSarabunBase64 !== 'undefined' && thSarabunBase64.length > 100) {
-        doc.addFileToVFS("Kanit-Regular.ttf", thSarabunBase64)
-        doc.addFont("Kanit-Regular.ttf", "Kanit-Regular", "normal")
-        doc.setFont("Kanit-Regular")
-        console.log('✅ Thai font loaded successfully')
+      if (
+        typeof thSarabunBase64 !== "undefined" &&
+        thSarabunBase64.length > 100
+      ) {
+        doc.addFileToVFS("Kanit-Regular.ttf", thSarabunBase64);
+        doc.addFont("Kanit-Regular.ttf", "Kanit-Regular", "normal");
+        doc.setFont("Kanit-Regular");
+        console.log("✅ Thai font loaded successfully");
       } else {
-        doc.setFont('Helvetica')
-        console.warn('⚠️ Thai font not loaded, using Helvetica')
+        doc.setFont("Helvetica");
+        console.warn("⚠️ Thai font not loaded, using Helvetica");
       }
     } catch (error) {
-      console.error('❌ Error loading Thai font:', error)
-      doc.setFont('Helvetica')
+      console.error("❌ Error loading Thai font:", error);
+      doc.setFont("Helvetica");
     }
 
-    const pageWidth = doc.internal.pageSize.getWidth()
-    const pageHeight = doc.internal.pageSize.getHeight()
-    const margin = 15
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
 
     // ชื่อผู้ออกรีพอร์ต
-    const reporterName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'N/A'
+    const reporterName =
+      `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim() ||
+      "N/A";
 
     // Format วันที่
     const formatDateThai = (dateStr: string) => {
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('th-TH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    }
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("th-TH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    };
 
     // ========================================
     // HEADER SECTION
     // ========================================
 
     // Background header
-    doc.setFillColor(59, 130, 246) // Blue
-    doc.rect(0, 0, pageWidth, 50, 'F')
+    doc.setFillColor(59, 130, 246); // Blue
+    doc.rect(0, 0, pageWidth, 50, "F");
 
     // Title
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(24)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('รายงานสรุปการเบิก-เติมยา', pageWidth / 2, 20, { align: 'center' })
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("รายงานสรุปการเบิก-เติมยา", pageWidth / 2, 20, {
+      align: "center",
+    });
 
-    doc.setFontSize(14)
-    doc.text('ระบบตู้เก็บยาอัจฉริยะ', pageWidth / 2, 30, { align: 'center' })
+    doc.setFontSize(14);
+    doc.text("ระบบตู้เก็บยาอัจฉริยะ", pageWidth / 2, 30, { align: "center" });
 
     // Period
-    doc.setFontSize(11)
-    const periodText = (reportData.start_date && reportData.end_date)
-      ? `ช่วงเวลา: ${formatDateThai(reportData.start_date)} - ${formatDateThai(reportData.end_date)}`
-      : 'ช่วงเวลา: ทั้งหมด'
-    doc.text(periodText, pageWidth / 2, 40, { align: 'center' })
+    doc.setFontSize(11);
+    const periodText =
+      reportData.start_date && reportData.end_date
+        ? `ช่วงเวลา: ${formatDateThai(reportData.start_date)} - ${formatDateThai(reportData.end_date)}`
+        : "ช่วงเวลา: ทั้งหมด";
+    doc.text(periodText, pageWidth / 2, 40, { align: "center" });
 
     // ========================================
     // INFO SECTION
     // ========================================
-    let yPos = 60
+    let yPos = 60;
 
     // Info box
-    doc.setFillColor(248, 250, 252) // Light gray
-    doc.setDrawColor(226, 232, 240)
-    doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 40, 3, 3, 'FD')
+    doc.setFillColor(248, 250, 252); // Light gray
+    doc.setDrawColor(226, 232, 240);
+    doc.roundedRect(margin, yPos, pageWidth - margin * 2, 40, 3, 3, "FD");
 
-    doc.setTextColor(71, 85, 105) // Gray
-    doc.setFontSize(10)
+    doc.setTextColor(71, 85, 105); // Gray
+    doc.setFontSize(10);
 
     // Left column
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('สถานที่:', margin + 5, yPos + 10)
-    doc.text('กลุ่มสถานที่:', margin + 5, yPos + 18)
-    doc.text('ผู้ออกรีพอร์ต:', margin + 5, yPos + 26)
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("สถานที่:", margin + 5, yPos + 10);
+    doc.text("กลุ่มสถานที่:", margin + 5, yPos + 18);
+    doc.text("ผู้ออกรีพอร์ต:", margin + 5, yPos + 26);
 
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.setTextColor(30, 41, 59)
-    doc.text(reportData.location_name || 'N/A', margin + 35, yPos + 10)
-    doc.text(reportData.group_location_name || 'N/A', margin + 35, yPos + 18)
-    doc.text(reporterName, margin + 35, yPos + 26)
+    doc.setFont("Kanit-Regular", "normal");
+    doc.setTextColor(30, 41, 59);
+    doc.text(reportData.location_name || "N/A", margin + 35, yPos + 10);
+    doc.text(reportData.group_location_name || "N/A", margin + 35, yPos + 18);
+    doc.text(reporterName, margin + 35, yPos + 26);
 
     // Right column
-    doc.setTextColor(71, 85, 105)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('วันที่ออกรีพอร์ต:', pageWidth / 2 + 10, yPos + 10)
-    doc.text('จำนวนรายการยา:', pageWidth / 2 + 10, yPos + 18)
+    doc.setTextColor(71, 85, 105);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("วันที่ออกรีพอร์ต:", pageWidth / 2 + 10, yPos + 10);
+    doc.text("จำนวนรายการยา:", pageWidth / 2 + 10, yPos + 18);
 
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.setTextColor(30, 41, 59)
-    doc.text(new Date().toLocaleDateString('th-TH'), pageWidth / 2 + 45, yPos + 10)
-    doc.text(`${reportData.summary?.total_products || 0} รายการ`, pageWidth / 2 + 45, yPos + 18)
+    doc.setFont("Kanit-Regular", "normal");
+    doc.setTextColor(30, 41, 59);
+    doc.text(
+      new Date().toLocaleDateString("th-TH"),
+      pageWidth / 2 + 45,
+      yPos + 10,
+    );
+    doc.text(
+      `${reportData.summary?.total_products || 0} รายการ`,
+      pageWidth / 2 + 45,
+      yPos + 18,
+    );
 
     // ✅ แสดง Filter Info (ถ้ามี)
     if (reportData.filters?.user_names || reportData.filters?.product_names) {
-      doc.setFont('Kanit-Regular', 'normal')
-      doc.setTextColor(71, 85, 105)
-
-
+      doc.setFont("Kanit-Regular", "normal");
+      doc.setTextColor(71, 85, 105);
     }
 
-    yPos += 50
+    yPos += 50;
 
     // ========================================
     // SECTION 1: SUMMARY TABLE (by product)
     // ========================================
 
     // Section header
-    doc.setFillColor(59, 130, 246)
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(14)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('📊 สรุปรวมตามยา', margin, yPos)
-    yPos += 5
+    doc.setFillColor(59, 130, 246);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("📊 สรุปรวมตามยา", margin, yPos);
+    yPos += 5;
 
     // Prepare summary table data
     if (reportData.summary_items && reportData.summary_items.length > 0) {
-      const summaryTableData = reportData.summary_items.map((item: any, index: number) => [
-        (index + 1).toString(),
-        item.product_id,
-        item.product_name,
-        item.total_restock.toString(),
-        item.total_withdraw.toString(),
-        item.current_stock.toString()
-      ])
+      const summaryTableData = reportData.summary_items.map(
+        (item: any, index: number) => [
+          (index + 1).toString(),
+          item.product_id,
+          item.product_name,
+          item.total_restock.toString(),
+          item.total_withdraw.toString(),
+          item.current_stock.toString(),
+        ],
+      );
 
       // Generate summary table
       autoTable(doc, {
         startY: yPos,
-        head: [['ลำดับ', 'รหัสยา', 'ชื่อยา', 'เติมยา', 'เบิกยา', 'คงเหลือ']],
+        head: [["ลำดับ", "รหัสยา", "ชื่อยา", "เติมยา", "เบิกยา", "คงเหลือ"]],
         body: summaryTableData,
-        theme: 'grid',
+        theme: "grid",
         headStyles: {
           fillColor: [59, 130, 246],
           textColor: [255, 255, 255],
-          font: 'Kanit-Regular',
-          fontStyle: 'normal',
-          halign: 'center',
-          fontSize: 10
+          font: "Kanit-Regular",
+          fontStyle: "normal",
+          halign: "center",
+          fontSize: 10,
         },
         bodyStyles: {
-          font: 'Kanit-Regular',
-          fontStyle: 'normal',
+          font: "Kanit-Regular",
+          fontStyle: "normal",
           fontSize: 9,
-          cellPadding: 3
+          cellPadding: 3,
         },
         columnStyles: {
-          0: { halign: 'center', cellWidth: 15 },
-          1: { halign: 'center', cellWidth: 25 },
-          2: { halign: 'left', cellWidth: 'auto' },
-          3: { halign: 'center', cellWidth: 22, fillColor: [220, 252, 231] }, // Green bg
-          4: { halign: 'center', cellWidth: 22, fillColor: [254, 226, 226] }, // Red bg
-          5: { halign: 'center', cellWidth: 22, fillColor: [219, 234, 254] }  // Blue bg
+          0: { halign: "center", cellWidth: 15 },
+          1: { halign: "center", cellWidth: 25 },
+          2: { halign: "left", cellWidth: "auto" },
+          3: { halign: "center", cellWidth: 22, fillColor: [220, 252, 231] }, // Green bg
+          4: { halign: "center", cellWidth: 22, fillColor: [254, 226, 226] }, // Red bg
+          5: { halign: "center", cellWidth: 22, fillColor: [219, 234, 254] }, // Blue bg
         },
         alternateRowStyles: {
-          fillColor: [248, 250, 252]
+          fillColor: [248, 250, 252],
         },
-        margin: { left: margin, right: margin }
-      })
+        margin: { left: margin, right: margin },
+      });
 
-      yPos = (doc as any).lastAutoTable.finalY + 15
+      yPos = (doc as any).lastAutoTable.finalY + 15;
     } else {
-      doc.setTextColor(128, 128, 128)
-      doc.setFontSize(10)
-      doc.text('ไม่มีข้อมูลสรุปยา', pageWidth / 2, yPos + 10, { align: 'center' })
-      yPos += 25
+      doc.setTextColor(128, 128, 128);
+      doc.setFontSize(10);
+      doc.text("ไม่มีข้อมูลสรุปยา", pageWidth / 2, yPos + 10, {
+        align: "center",
+      });
+      yPos += 25;
     }
 
     // ========================================
@@ -1334,110 +1584,125 @@ export default function TransactionDetailTestPage() {
 
     // Check if need new page
     if (yPos > pageHeight - 60) {
-      doc.addPage()
-      yPos = 20
+      doc.addPage();
+      yPos = 20;
     }
 
     // Section header
-    doc.setFillColor(34, 197, 94) // Green
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(14)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('📋 รายละเอียดการทำรายการ', margin, yPos)
-    yPos += 7
+    doc.setFillColor(34, 197, 94); // Green
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("📋 รายละเอียดการทำรายการ", margin, yPos);
+    yPos += 7;
 
-    if (reportData.detailed_transactions && reportData.detailed_transactions.length > 0) {
-      reportData.detailed_transactions.forEach((transaction: any, idx: number) => {
-        // Check if need new page (reserve space for transaction header + at least 2 rows)
-        if (yPos > pageHeight - 70) {
-          doc.addPage()
-          yPos = 20
-        }
+    if (
+      reportData.detailed_transactions &&
+      reportData.detailed_transactions.length > 0
+    ) {
+      reportData.detailed_transactions.forEach(
+        (transaction: any, idx: number) => {
+          // Check if need new page (reserve space for transaction header + at least 2 rows)
+          if (yPos > pageHeight - 70) {
+            doc.addPage();
+            yPos = 20;
+          }
 
-        // Transaction header bar
-        const activityColor = transaction.activity === 'เบิกยา'
-          ? [239, 68, 68]   // Red
-          : [34, 197, 94]   // Green
+          // Transaction header bar
+          const activityColor =
+            transaction.activity === "เบิกยา"
+              ? [239, 68, 68] // Red
+              : [34, 197, 94]; // Green
 
-        doc.setFillColor(activityColor[0], activityColor[1], activityColor[2])
-        doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 14, 2, 2, 'F')
+          doc.setFillColor(
+            activityColor[0],
+            activityColor[1],
+            activityColor[2],
+          );
+          doc.roundedRect(margin, yPos, pageWidth - margin * 2, 14, 2, 2, "F");
 
-        doc.setTextColor(255, 255, 255)
-        doc.setFontSize(10)
-        doc.setFont('Kanit-Regular', 'normal')
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(10);
+          doc.setFont("Kanit-Regular", "normal");
 
-        // Transaction info on header
-        const transactionHeader = `#${idx + 1} - Transaction ID: ${transaction.transaction_id} | ${transaction.activity}`
-        doc.text(transactionHeader, margin + 2, yPos + 5)
+          // Transaction info on header
+          const transactionHeader = `#${idx + 1} - Transaction ID: ${transaction.transaction_id} | ${transaction.activity}`;
+          doc.text(transactionHeader, margin + 2, yPos + 5);
 
-        const transactionSubHeader = `👤 ${transaction.user_name} | 📍 ${transaction.location_name} | รวม: ${transaction.total_amount} ชิ้น`
-        doc.setFontSize(8)
-        doc.text(transactionSubHeader, margin + 2, yPos + 10)
+          const transactionSubHeader = `👤 ${transaction.user_name} | 📍 ${transaction.location_name} | รวม: ${transaction.total_amount} ชิ้น`;
+          doc.setFontSize(8);
+          doc.text(transactionSubHeader, margin + 2, yPos + 10);
 
-        yPos += 18
+          yPos += 18;
 
-        // Prepare items table data for this transaction
-        const itemsData = transaction.items.map((item: any, i: number) => [
-          (i + 1).toString(),
-          item.product_name,
-          item.lot_id,
-          `Slot #${item.slot_id}`,
-          `Locker #${item.locker_id}`,
-          item.amount.toString()
-        ])
+          // Prepare items table data for this transaction
+          const itemsData = transaction.items.map((item: any, i: number) => [
+            (i + 1).toString(),
+            item.product_name,
+            item.lot_id,
+            `Slot #${item.slot_id}`,
+            `Locker #${item.locker_id}`,
+            item.amount.toString(),
+          ]);
 
-        // Generate items table
-        autoTable(doc, {
-          startY: yPos,
-          head: [['#', 'ชื่อยา', 'Lot ID', 'Slot', 'Locker', 'จำนวน']],
-          body: itemsData,
-          theme: 'grid',
-          headStyles: {
-            fillColor: [226, 232, 240],
-            textColor: [30, 41, 59],
-            font: 'Kanit-Regular',
-            fontStyle: 'normal',
-            fontSize: 9,
-            halign: 'center'
-          },
-          bodyStyles: {
-            font: 'Kanit-Regular',
-            fontStyle: 'normal',
-            fontSize: 8,
-            cellPadding: 2
-          },
-          columnStyles: {
-            0: { halign: 'center', cellWidth: 10 },
-            1: { halign: 'left', cellWidth: 'auto' },
-            2: { halign: 'center', cellWidth: 25 },
-            3: { halign: 'center', cellWidth: 20 },
-            4: { halign: 'center', cellWidth: 22 },
-            5: {
-              halign: 'center',
-              cellWidth: 18,
-              fillColor: transaction.activity === 'เบิกยา' ? [254, 226, 226] : [220, 252, 231]
-            }
-          },
-          alternateRowStyles: {
-            fillColor: [248, 250, 252]
-          },
-          margin: { left: margin + 3, right: margin + 3 }
-        })
+          // Generate items table
+          autoTable(doc, {
+            startY: yPos,
+            head: [["#", "ชื่อยา", "Lot ID", "Slot", "Locker", "จำนวน"]],
+            body: itemsData,
+            theme: "grid",
+            headStyles: {
+              fillColor: [226, 232, 240],
+              textColor: [30, 41, 59],
+              font: "Kanit-Regular",
+              fontStyle: "normal",
+              fontSize: 9,
+              halign: "center",
+            },
+            bodyStyles: {
+              font: "Kanit-Regular",
+              fontStyle: "normal",
+              fontSize: 8,
+              cellPadding: 2,
+            },
+            columnStyles: {
+              0: { halign: "center", cellWidth: 10 },
+              1: { halign: "left", cellWidth: "auto" },
+              2: { halign: "center", cellWidth: 25 },
+              3: { halign: "center", cellWidth: 20 },
+              4: { halign: "center", cellWidth: 22 },
+              5: {
+                halign: "center",
+                cellWidth: 18,
+                fillColor:
+                  transaction.activity === "เบิกยา"
+                    ? [254, 226, 226]
+                    : [220, 252, 231],
+              },
+            },
+            alternateRowStyles: {
+              fillColor: [248, 250, 252],
+            },
+            margin: { left: margin + 3, right: margin + 3 },
+          });
 
-        yPos = (doc as any).lastAutoTable.finalY + 10
+          yPos = (doc as any).lastAutoTable.finalY + 10;
 
-        // Separator line
-        if (idx < reportData.detailed_transactions.length - 1) {
-          doc.setDrawColor(200, 200, 200)
-          doc.line(margin, yPos, pageWidth - margin, yPos)
-          yPos += 5
-        }
-      })
+          // Separator line
+          if (idx < reportData.detailed_transactions.length - 1) {
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, yPos, pageWidth - margin, yPos);
+            yPos += 5;
+          }
+        },
+      );
     } else {
-      doc.setTextColor(128, 128, 128)
-      doc.setFontSize(10)
-      doc.text('ไม่มีรายการทำรายการในช่วงเวลานี้', pageWidth / 2, yPos + 10, { align: 'center' })
-      yPos += 25
+      doc.setTextColor(128, 128, 128);
+      doc.setFontSize(10);
+      doc.text("ไม่มีรายการทำรายการในช่วงเวลานี้", pageWidth / 2, yPos + 10, {
+        align: "center",
+      });
+      yPos += 25;
     }
 
     // ========================================
@@ -1446,219 +1711,231 @@ export default function TransactionDetailTestPage() {
 
     // Check if need new page
     if (yPos > pageHeight - 50) {
-      doc.addPage()
-      yPos = 20
+      doc.addPage();
+      yPos = 20;
     } else {
-      yPos += 5
+      yPos += 5;
     }
 
-    const cardWidth = (pageWidth - (margin * 2) - 15) / 4
-    const cardHeight = 28
+    const cardWidth = (pageWidth - margin * 2 - 15) / 4;
+    const cardHeight = 28;
 
     // Summary title
-    doc.setTextColor(30, 41, 59)
-    doc.setFontSize(13)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('📈 สรุปภาพรวม', margin, yPos)
-    yPos += 8
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(13);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("📈 สรุปภาพรวม", margin, yPos);
+    yPos += 8;
 
     // Card 1: Total Products (Blue)
-    doc.setFillColor(59, 130, 246)
-    doc.roundedRect(margin, yPos, cardWidth, cardHeight, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(9)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('จำนวนรายการยา', margin + cardWidth / 2, yPos + 8, { align: 'center' })
-    doc.setFontSize(18)
-    doc.setFont('Kanit-Regular', 'normal')
+    doc.setFillColor(59, 130, 246);
+    doc.roundedRect(margin, yPos, cardWidth, cardHeight, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("จำนวนรายการยา", margin + cardWidth / 2, yPos + 8, {
+      align: "center",
+    });
+    doc.setFontSize(18);
+    doc.setFont("Kanit-Regular", "normal");
     doc.text(
       (reportData.summary?.total_products || 0).toString(),
       margin + cardWidth / 2,
       yPos + 18,
-      { align: 'center' }
-    )
-    doc.setFontSize(7)
-    doc.text('รายการ', margin + cardWidth / 2, yPos + 24, { align: 'center' })
+      { align: "center" },
+    );
+    doc.setFontSize(7);
+    doc.text("รายการ", margin + cardWidth / 2, yPos + 24, { align: "center" });
 
     // Card 2: Total Restock (Green)
-    const card2X = margin + cardWidth + 5
-    doc.setFillColor(34, 197, 94)
-    doc.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(9)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('จำนวนเติมยารวม', card2X + cardWidth / 2, yPos + 8, { align: 'center' })
-    doc.setFontSize(18)
-    doc.setFont('Kanit-Regular', 'normal')
+    const card2X = margin + cardWidth + 5;
+    doc.setFillColor(34, 197, 94);
+    doc.roundedRect(card2X, yPos, cardWidth, cardHeight, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("จำนวนเติมยารวม", card2X + cardWidth / 2, yPos + 8, {
+      align: "center",
+    });
+    doc.setFontSize(18);
+    doc.setFont("Kanit-Regular", "normal");
     doc.text(
       (reportData.summary?.total_restock_all || 0).toString(),
       card2X + cardWidth / 2,
       yPos + 18,
-      { align: 'center' }
-    )
-    doc.setFontSize(7)
+      { align: "center" },
+    );
+    doc.setFontSize(7);
     doc.text(
       `${reportData.summary?.total_restock_transactions || 0} ครั้ง`,
       card2X + cardWidth / 2,
       yPos + 24,
-      { align: 'center' }
-    )
+      { align: "center" },
+    );
 
     // Card 3: Total Withdraw (Red)
-    const card3X = margin + (cardWidth + 5) * 2
-    doc.setFillColor(239, 68, 68)
-    doc.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(9)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('จำนวนเบิกยารวม', card3X + cardWidth / 2, yPos + 8, { align: 'center' })
-    doc.setFontSize(18)
-    doc.setFont('Kanit-Regular', 'normal')
+    const card3X = margin + (cardWidth + 5) * 2;
+    doc.setFillColor(239, 68, 68);
+    doc.roundedRect(card3X, yPos, cardWidth, cardHeight, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("จำนวนเบิกยารวม", card3X + cardWidth / 2, yPos + 8, {
+      align: "center",
+    });
+    doc.setFontSize(18);
+    doc.setFont("Kanit-Regular", "normal");
     doc.text(
       (reportData.summary?.total_withdraw_all || 0).toString(),
       card3X + cardWidth / 2,
       yPos + 18,
-      { align: 'center' }
-    )
-    doc.setFontSize(7)
+      { align: "center" },
+    );
+    doc.setFontSize(7);
     doc.text(
       `${reportData.summary?.total_withdraw_transactions || 0} ครั้ง`,
       card3X + cardWidth / 2,
       yPos + 24,
-      { align: 'center' }
-    )
+      { align: "center" },
+    );
 
     // Card 4: Current Stock (Purple)
-    const card4X = margin + (cardWidth + 5) * 3
-    doc.setFillColor(139, 92, 246)
-    doc.roundedRect(card4X, yPos, cardWidth, cardHeight, 2, 2, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(9)
-    doc.setFont('Kanit-Regular', 'normal')
-    doc.text('จำนวนคงเหลือรวม', card4X + cardWidth / 2, yPos + 8, { align: 'center' })
-    doc.setFontSize(18)
-    doc.setFont('Kanit-Regular', 'normal')
+    const card4X = margin + (cardWidth + 5) * 3;
+    doc.setFillColor(139, 92, 246);
+    doc.roundedRect(card4X, yPos, cardWidth, cardHeight, 2, 2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont("Kanit-Regular", "normal");
+    doc.text("จำนวนคงเหลือรวม", card4X + cardWidth / 2, yPos + 8, {
+      align: "center",
+    });
+    doc.setFontSize(18);
+    doc.setFont("Kanit-Regular", "normal");
     doc.text(
       (reportData.summary?.total_current_stock || 0).toString(),
       card4X + cardWidth / 2,
       yPos + 18,
-      { align: 'center' }
-    )
-    doc.setFontSize(7)
-    doc.text('ชิ้น', card4X + cardWidth / 2, yPos + 24, { align: 'center' })
+      { align: "center" },
+    );
+    doc.setFontSize(7);
+    doc.text("ชิ้น", card4X + cardWidth / 2, yPos + 24, { align: "center" });
 
-    yPos += cardHeight + 10
+    yPos += cardHeight + 10;
 
     // Additional summary info
-    doc.setTextColor(100, 100, 100)
-    doc.setFontSize(8)
-    doc.setFont('Kanit-Regular', 'normal')
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(8);
+    doc.setFont("Kanit-Regular", "normal");
     doc.text(
       `ทั้งหมด ${reportData.summary?.total_transactions || 0} รายการทำรายการ (${reportData.summary?.total_transaction_items || 0} รายการสินค้า)`,
       pageWidth / 2,
       yPos,
-      { align: 'center' }
-    )
+      { align: "center" },
+    );
 
     // ========================================
     // FOOTER (ใส่ทุกหน้า)
     // ========================================
-    const totalPages = doc.getNumberOfPages()
+    const totalPages = doc.getNumberOfPages();
 
     for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i)
+      doc.setPage(i);
 
-      doc.setTextColor(148, 163, 184)
-      doc.setFontSize(8)
-      doc.setFont('Kanit-Regular', 'normal')
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(8);
+      doc.setFont("Kanit-Regular", "normal");
 
       // Footer text
       doc.text(
-        `สร้างเมื่อ ${new Date().toLocaleString('th-TH')} | ระบบตู้เก็บยาอัจฉริยะ`,
+        `สร้างเมื่อ ${new Date().toLocaleString("th-TH")} | ระบบตู้เก็บยาอัจฉริยะ`,
         pageWidth / 2,
         pageHeight - 10,
-        { align: 'center' }
-      )
+        { align: "center" },
+      );
 
       // Page number
       doc.text(
         `หน้า ${i} จาก ${totalPages}`,
         pageWidth - margin,
         pageHeight - 10,
-        { align: 'right' }
-      )
+        { align: "right" },
+      );
     }
 
     // ========================================
     // SAVE PDF
     // ========================================
-    const startDateFormatted = reportData.start_date?.replace(/-/g, '') || 'all'
-    const endDateFormatted = reportData.end_date?.replace(/-/g, '') || 'all'
+    const startDateFormatted =
+      reportData.start_date?.replace(/-/g, "") || "all";
+    const endDateFormatted = reportData.end_date?.replace(/-/g, "") || "all";
 
-    let filename = `รายงานยา_${reportData.location_name.replace(/\s+/g, '_')}_${startDateFormatted}-${endDateFormatted}`
+    let filename = `รายงานยา_${reportData.location_name.replace(/\s+/g, "_")}_${startDateFormatted}-${endDateFormatted}`;
 
+    filename += ".pdf";
 
+    doc.save(filename);
 
-    filename += '.pdf'
-
-    doc.save(filename)
-
-    alert('ดาวน์โหลดรีพอร์ต PDF สำเร็จ')
-  }
+    alert("ดาวน์โหลดรีพอร์ต PDF สำเร็จ");
+  };
 
   // ตรวจสอบว่าฟอร์มครบถ้วนหรือไม่
   const isReportFormValid = () => {
     if (!reportForm.start_date || !reportForm.end_date) {
-      return true
+      return true;
     }
 
     // Role 3 ไม่ต้องเลือก location
     if (currentUser?.role === 3) {
-      return true
+      return true;
     }
 
     // Role 1, 2 ต้องเลือก location หรือ group
-    return !!(reportForm.location_id || reportForm.group_location_id)
-  }
+    return !!(reportForm.location_id || reportForm.group_location_id);
+  };
 
   // Get filtered locations based on selected group (for Role 1)
   const getFilteredLocations = () => {
     if (currentUser?.role === 1 && reportForm.group_location_id) {
-      return locations.filter(loc =>
-        loc.group_location_id === parseInt(reportForm.group_location_id)
-      )
+      return locations.filter(
+        (loc) =>
+          loc.group_location_id === parseInt(reportForm.group_location_id),
+      );
     }
-    return locations
-  }
+    return locations;
+  };
 
   const filteredTransactions = transactions.filter(
     (transaction) =>
       transaction.transaction_id?.toString().includes(searchTerm) ||
-      transaction.User.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.User.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.User.first_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      transaction.User.last_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       transaction.user_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.activity?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-
-      transaction.items?.some((item: any) =>
-        item.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.product_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.lot_id?.toLowerCase().includes(searchTerm.toLowerCase())
-
+      transaction.items?.some(
+        (item: any) =>
+          item.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.product_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.lot_id?.toLowerCase().includes(searchTerm.toLowerCase()),
       ) ||
-
-      (users.find(u => u.user_id === transaction.user_id)?.user_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-  )
+      (users.find((u) => u.user_id === transaction.user_id)?.user_name || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
+  );
 
   const getStatusBadge = (status: string) => {
-    if (status === 'สำเร็จ' || status === 'success') {
-      return <Badge className="bg-green-500">success</Badge>
-    } else if (status === 'กำลังดำเนินการ') {
-      return <Badge className="bg-yellow-500">กำลังดำเนินการ</Badge>
+    if (status === "สำเร็จ" || status === "success") {
+      return <Badge className="bg-green-500">success</Badge>;
+    } else if (status === "กำลังดำเนินการ") {
+      return <Badge className="bg-yellow-500">กำลังดำเนินการ</Badge>;
     } else {
-      return <Badge variant="secondary">{status}</Badge>
+      return <Badge variant="secondary">{status}</Badge>;
     }
-  }
+  };
 
   // ✅ แสดง loading state หากยังไม่มี currentUser
   if (isInitializing || !currentUser) {
@@ -1669,7 +1946,7 @@ export default function TransactionDetailTestPage() {
           <p className="text-gray-500">กำลังโหลดข้อมูล...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -1677,7 +1954,9 @@ export default function TransactionDetailTestPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">ประวัติการทำรายการ</h1>
-          <p className="text-gray-500">ประวัติการทำรายการ / รายละเอียดการทำรายการ</p>
+          <p className="text-gray-500">
+            ประวัติการทำรายการ / รายละเอียดการทำรายการ
+          </p>
         </div>
         {/* ✅ ปุ่มออกใบรีพอร์ต */}
         <Button
@@ -1744,9 +2023,13 @@ export default function TransactionDetailTestPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <h3 className="font-semibold mb-3">รายการในตะกร้า ({cartItems.length} รายการ)</h3>
+            <h3 className="font-semibold mb-3">
+              รายการในตะกร้า ({cartItems.length} รายการ)
+            </h3>
             {cartItems.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">ยังไม่มีรายการในตะกร้า</p>
+              <p className="text-gray-500 text-center py-4">
+                ยังไม่มีรายการในตะกร้า
+              </p>
             ) : (
               <Table>
                 <TableHeader>
@@ -1767,7 +2050,9 @@ export default function TransactionDetailTestPage() {
                       <TableCell>{item.slot_id}</TableCell>
                       <TableCell>{item.amount_added || item.amount}</TableCell>
                       <TableCell>
-                        <Badge variant={item.was_created ? "default" : "secondary"}>
+                        <Badge
+                          variant={item.was_created ? "default" : "secondary"}
+                        >
                           {item.action}
                         </Badge>
                       </TableCell>
@@ -1797,7 +2082,6 @@ export default function TransactionDetailTestPage() {
           </TabsTrigger>
         </TabsList>
 
-
         {/* TRANSACTIONS TAB */}
         <TabsContent value="transactions">
           <Card>
@@ -1811,9 +2095,7 @@ export default function TransactionDetailTestPage() {
                 </div>
               </div>
               <div>
-                <div>
-
-                </div>
+                <div></div>
               </div>
               <div className="flex gap-4 mt-4">
                 <div className="relative flex-1">
@@ -1848,13 +2130,21 @@ export default function TransactionDetailTestPage() {
                   <TableBody>
                     {filteredTransactions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-gray-500">
+                        <TableCell
+                          colSpan={6}
+                          className="text-center text-gray-500"
+                        >
                           ไม่พบข้อมูล Transaction
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredTransactions
-                        .filter((transaction) => transaction.status === 'สำเร็จ' || transaction.status === 'success').map((transaction) => (
+                        .filter(
+                          (transaction) =>
+                            transaction.status === "สำเร็จ" ||
+                            transaction.status === "success",
+                        )
+                        .map((transaction) => (
                           <React.Fragment key={transaction.transaction_id}>
                             {/* แถวหลัก */}
                             <TableRow key={transaction.transaction_id}>
@@ -1864,10 +2154,16 @@ export default function TransactionDetailTestPage() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => toggleRowExpansion(transaction.transaction_id)}
+                                    onClick={() =>
+                                      toggleRowExpansion(
+                                        transaction.transaction_id,
+                                      )
+                                    }
                                     className="p-0 h-6 w-6"
                                   >
-                                    {expandedRows.has(transaction.transaction_id) ? (
+                                    {expandedRows.has(
+                                      transaction.transaction_id,
+                                    ) ? (
                                       <ChevronDown className="w-4 h-4" />
                                     ) : (
                                       <ChevronRight className="w-4 h-4" />
@@ -1875,29 +2171,37 @@ export default function TransactionDetailTestPage() {
                                   </Button>
                                   {transaction.transaction_id}
                                   {/* ✅ แสดง TriangleAlert ถ้ามี item ที่ is_discrepancy = true */}
-                                  {transaction.items && transaction.items.some((item: any) => item.is_discrepancy) && (
-                                    <TriangleAlert className="w-4 h-4 text-yellow-500" />
-                                  )}
+                                  {transaction.items &&
+                                    transaction.items.some(
+                                      (item: any) => item.is_discrepancy,
+                                    ) && (
+                                      <TriangleAlert className="w-4 h-4 text-yellow-500" />
+                                    )}
                                 </div>
                               </TableCell>
                               <TableCell>
-                                {transaction.User?.first_name || "-"} {transaction.User?.last_name || "-"}
+                                {transaction.User?.first_name || "-"}{" "}
+                                {transaction.User?.last_name || "-"}
                               </TableCell>
-                              <TableCell>
-                                {transaction.activity}
-                              </TableCell>
+                              <TableCell>{transaction.activity}</TableCell>
                               <TableCell>
                                 {getStatusBadge(transaction.status)}
                               </TableCell>
                               <TableCell>
-                                {new Date(transaction.created_at).toLocaleString('th-TH')}
+                                {new Date(
+                                  transaction.created_at,
+                                ).toLocaleString("th-TH")}
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-2">
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleViewTransactionDetail(transaction.transaction_id)}
+                                    onClick={() =>
+                                      handleViewTransactionDetail(
+                                        transaction.transaction_id,
+                                      )
+                                    }
                                   >
                                     <Eye className="w-4 h-4 mr-1" />
                                     ดูรายละเอียด
@@ -1910,7 +2214,11 @@ export default function TransactionDetailTestPage() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => fetchTransactionSnapshots(transaction.transaction_id)}
+                                    onClick={() =>
+                                      fetchTransactionSnapshots(
+                                        transaction.transaction_id,
+                                      )
+                                    }
                                     className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                   >
                                     <Camera className="w-4 h-4 mr-1" />
@@ -1923,80 +2231,127 @@ export default function TransactionDetailTestPage() {
                             {/* แถวขยาย - แสดงรายการยา */}
                             {expandedRows.has(transaction.transaction_id) && (
                               <TableRow>
-                                <TableCell colSpan={6} className="bg-gray-50 p-4">
+                                <TableCell
+                                  colSpan={6}
+                                  className="bg-gray-50 p-4"
+                                >
                                   <div className="space-y-2">
                                     {(() => {
-                                      const transactionItems = transactionDetails.filter(
-                                        (detail) => detail.transaction_id === transaction.transaction_id
-                                      )
+                                      const transactionItems =
+                                        transactionDetails.filter(
+                                          (detail) =>
+                                            detail.transaction_id ===
+                                            transaction.transaction_id,
+                                        );
                                       return (
                                         <>
                                           <h4 className="font-semibold text-sm mb-3">
-                                            รายการสินค้า ({transactionItems.length} รายการ)
+                                            รายการสินค้า (
+                                            {transactionItems.length} รายการ)
                                           </h4>
                                           {transactionItems.length === 0 ? (
-                                            <p className="text-gray-500 text-sm">ไม่มีรายการสินค้า</p>
+                                            <p className="text-gray-500 text-sm">
+                                              ไม่มีรายการสินค้า
+                                            </p>
                                           ) : (
                                             <Table>
                                               <TableHeader>
                                                 <TableRow className="bg-white">
-                                                  <TableHead className="w-[60px]">ลำดับ</TableHead>
+                                                  <TableHead className="w-[60px]">
+                                                    ลำดับ
+                                                  </TableHead>
                                                   <TableHead>ชื่อยา</TableHead>
                                                   <TableHead>Lot ID</TableHead>
                                                   <TableHead>Slot</TableHead>
-                                                  <TableHead className="text-right">จำนวน</TableHead>
-                                                  <TableHead className="text-right">จำนวนจากกล้อง</TableHead>
-                                                  <TableHead className="text-right">คงเหลือ</TableHead>
+                                                  <TableHead className="text-right">
+                                                    จำนวน
+                                                  </TableHead>
+                                                  <TableHead className="text-right">
+                                                    จำนวนจากกล้อง
+                                                  </TableHead>
+                                                  <TableHead className="text-right">
+                                                    คงเหลือ
+                                                  </TableHead>
                                                 </TableRow>
                                               </TableHeader>
                                               <TableBody>
-                                                {transactionItems.map((item: any, index: number) => (
-                                                  <TableRow key={index} className={`bg-white ${item.is_discrepancy ? 'border-l-4 border-l-yellow-500' : ''}`}>
-                                                    <TableCell className="font-medium">
-                                                      <div className="flex items-center gap-2">
-                                                        {index + 1}
-                                                        {item.is_discrepancy && (
-                                                          <TriangleAlert className="w-4 h-4 text-yellow-500" />
-                                                        )}
-                                                      </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                      <div>
-                                                        <p className="font-semibold">{item.Product?.product_name || 'N/A'}</p>
-                                                        <p className="text-xs text-gray-500">{item.Product?.product_id || 'N/A'}</p>
-                                                      </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                      <Badge variant="outline">{item.Slot_stock?.lot_id || 'N/A'}</Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                      <span className="text-sm">Slot #{item.Slot?.slot_id || 'N/A'}</span>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                      <Badge
-                                                        variant={transaction.activity === 'เบิกยา' ? 'destructive' : 'default'}
-                                                        className="font-semibold bg-blue-600"
-                                                      >
-                                                        {item.amount}
-                                                      </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                      <span className="text-sm font-medium text-gray-600">
-                                                        {item.camera_amount || '0'}
-                                                      </span>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                      <span className="text-sm font-medium text-gray-600">
-                                                        {item.Slot_stock?.amount || '0'}
-                                                      </span>
-                                                    </TableCell>
-                                                  </TableRow>
-                                                ))}
+                                                {transactionItems.map(
+                                                  (
+                                                    item: any,
+                                                    index: number,
+                                                  ) => (
+                                                    <TableRow
+                                                      key={index}
+                                                      className={`bg-white ${item.is_discrepancy ? "border-l-4 border-l-yellow-500" : ""}`}
+                                                    >
+                                                      <TableCell className="font-medium">
+                                                        <div className="flex items-center gap-2">
+                                                          {index + 1}
+                                                          {item.is_discrepancy && (
+                                                            <TriangleAlert className="w-4 h-4 text-yellow-500" />
+                                                          )}
+                                                        </div>
+                                                      </TableCell>
+                                                      <TableCell>
+                                                        <div>
+                                                          <p className="font-semibold">
+                                                            {item.Product
+                                                              ?.product_name ||
+                                                              "N/A"}
+                                                          </p>
+                                                          <p className="text-xs text-gray-500">
+                                                            {item.Product
+                                                              ?.product_id ||
+                                                              "N/A"}
+                                                          </p>
+                                                        </div>
+                                                      </TableCell>
+                                                      <TableCell>
+                                                        <Badge variant="outline">
+                                                          {item.Slot_stock
+                                                            ?.lot_id || "N/A"}
+                                                        </Badge>
+                                                      </TableCell>
+                                                      <TableCell>
+                                                        <span className="text-sm">
+                                                          Slot #
+                                                          {item.Slot?.slot_id ||
+                                                            "N/A"}
+                                                        </span>
+                                                      </TableCell>
+                                                      <TableCell className="text-right">
+                                                        <Badge
+                                                          variant={
+                                                            transaction.activity ===
+                                                            "เบิกยา"
+                                                              ? "destructive"
+                                                              : "default"
+                                                          }
+                                                          className="font-semibold bg-blue-600"
+                                                        >
+                                                          {item.amount}
+                                                        </Badge>
+                                                      </TableCell>
+                                                      <TableCell className="text-right">
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                          {item.camera_amount ||
+                                                            "0"}
+                                                        </span>
+                                                      </TableCell>
+                                                      <TableCell className="text-right">
+                                                        <span className="text-sm font-medium text-gray-600">
+                                                          {item.Slot_stock
+                                                            ?.amount || "0"}
+                                                        </span>
+                                                      </TableCell>
+                                                    </TableRow>
+                                                  ),
+                                                )}
                                               </TableBody>
                                             </Table>
                                           )}
                                         </>
-                                      )
+                                      );
                                     })()}
                                   </div>
                                 </TableCell>
@@ -2014,7 +2369,10 @@ export default function TransactionDetailTestPage() {
       </Tabs>
 
       {/* CREATE TRANSACTION DIALOG */}
-      <Dialog open={isCreateTransactionDialogOpen} onOpenChange={setIsCreateTransactionDialogOpen}>
+      <Dialog
+        open={isCreateTransactionDialogOpen}
+        onOpenChange={setIsCreateTransactionDialogOpen}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>สร้าง Transaction ใหม่</DialogTitle>
@@ -2029,53 +2387,67 @@ export default function TransactionDetailTestPage() {
                 id="user_id"
                 value={createTransactionForm.user_id}
                 onChange={(e) => {
-                  setCreateTransactionForm({ ...createTransactionForm, user_id: e.target.value })
-                  setPermissionError(null)
+                  setCreateTransactionForm({
+                    ...createTransactionForm,
+                    user_id: e.target.value,
+                  });
+                  setPermissionError(null);
                 }}
                 placeholder="ใส่ User UUID"
               />
-              {createTransactionForm.user_id && createTransactionForm.activity && (
-                <div className="mt-2 text-sm">
-                  {(() => {
-                    const grant = userLockerGrants.find(g => g.user_id === createTransactionForm.user_id)
-                    if (!grant) {
-                      return (
-                        <div className="text-red-600 flex items-center gap-1">
-                          <XCircle className="w-4 h-4" />
-                          ไม่พบสิทธิ์การเข้าถึงตู้
-                        </div>
-                      )
-                    }
-                    const canWithdraw = grant.permission_withdraw === 1
-                    const canRestock = grant.permission_restock === 1
-                    const hasPermission = createTransactionForm.activity === 'เบิกยา' ? canWithdraw : canRestock
-
-                    return (
-                      <div className={`flex items-center gap-1 ${hasPermission ? 'text-green-600' : 'text-red-600'}`}>
-                        {hasPermission ? (
-                          <>
-                            <CheckCircle className="w-4 h-4" />
-                            มีสิทธิ์ {createTransactionForm.activity}
-                          </>
-                        ) : (
-                          <>
+              {createTransactionForm.user_id &&
+                createTransactionForm.activity && (
+                  <div className="mt-2 text-sm">
+                    {(() => {
+                      const grant = userLockerGrants.find(
+                        (g) => g.user_id === createTransactionForm.user_id,
+                      );
+                      if (!grant) {
+                        return (
+                          <div className="text-red-600 flex items-center gap-1">
                             <XCircle className="w-4 h-4" />
-                            ไม่มีสิทธิ์ {createTransactionForm.activity}
-                          </>
-                        )}
-                      </div>
-                    )
-                  })()}
-                </div>
-              )}
+                            ไม่พบสิทธิ์การเข้าถึงตู้
+                          </div>
+                        );
+                      }
+                      const canWithdraw = grant.permission_withdraw === 1;
+                      const canRestock = grant.permission_restock === 1;
+                      const hasPermission =
+                        createTransactionForm.activity === "เบิกยา"
+                          ? canWithdraw
+                          : canRestock;
+
+                      return (
+                        <div
+                          className={`flex items-center gap-1 ${hasPermission ? "text-green-600" : "text-red-600"}`}
+                        >
+                          {hasPermission ? (
+                            <>
+                              <CheckCircle className="w-4 h-4" />
+                              มีสิทธิ์ {createTransactionForm.activity}
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-4 h-4" />
+                              ไม่มีสิทธิ์ {createTransactionForm.activity}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
             </div>
             <div>
               <Label htmlFor="activity">กิจกรรม *</Label>
               <Select
                 value={createTransactionForm.activity}
                 onValueChange={(value) => {
-                  setCreateTransactionForm({ ...createTransactionForm, activity: value })
-                  setPermissionError(null)
+                  setCreateTransactionForm({
+                    ...createTransactionForm,
+                    activity: value,
+                  });
+                  setPermissionError(null);
                 }}
               >
                 <SelectTrigger>
@@ -2092,8 +2464,8 @@ export default function TransactionDetailTestPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setIsCreateTransactionDialogOpen(false)
-                setPermissionError(null)
+                setIsCreateTransactionDialogOpen(false);
+                setPermissionError(null);
               }}
               disabled={createTransactionLoading}
             >
@@ -2101,7 +2473,11 @@ export default function TransactionDetailTestPage() {
             </Button>
             <Button
               onClick={handleCreateTransaction}
-              disabled={createTransactionLoading || !createTransactionForm.user_id || !createTransactionForm.activity}
+              disabled={
+                createTransactionLoading ||
+                !createTransactionForm.user_id ||
+                !createTransactionForm.activity
+              }
               className="bg-blue-600 hover:bg-blue-700"
             >
               {createTransactionLoading ? (
@@ -2110,7 +2486,7 @@ export default function TransactionDetailTestPage() {
                   <span>กำลังสร้าง...</span>
                 </div>
               ) : (
-                'สร้าง Transaction'
+                "สร้าง Transaction"
               )}
             </Button>
           </DialogFooter>
@@ -2131,14 +2507,19 @@ export default function TransactionDetailTestPage() {
               <Label htmlFor="product_id">Product ID *</Label>
               <Select
                 value={addItemForm.product_id}
-                onValueChange={(value) => setAddItemForm({ ...addItemForm, product_id: value })}
+                onValueChange={(value) =>
+                  setAddItemForm({ ...addItemForm, product_id: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="เลือกสินค้า" />
                 </SelectTrigger>
                 <SelectContent>
                   {products.map((product) => (
-                    <SelectItem key={product.product_id} value={product.product_id}>
+                    <SelectItem
+                      key={product.product_id}
+                      value={product.product_id}
+                    >
                       {product.product_name} ({product.product_id})
                     </SelectItem>
                   ))}
@@ -2150,7 +2531,9 @@ export default function TransactionDetailTestPage() {
               <Input
                 id="lot_id"
                 value={addItemForm.lot_id}
-                onChange={(e) => setAddItemForm({ ...addItemForm, lot_id: e.target.value })}
+                onChange={(e) =>
+                  setAddItemForm({ ...addItemForm, lot_id: e.target.value })
+                }
                 placeholder="เช่น LOT2025001"
               />
             </div>
@@ -2158,14 +2541,19 @@ export default function TransactionDetailTestPage() {
               <Label htmlFor="slot_id">Slot ID *</Label>
               <Select
                 value={addItemForm.slot_id}
-                onValueChange={(value) => setAddItemForm({ ...addItemForm, slot_id: value })}
+                onValueChange={(value) =>
+                  setAddItemForm({ ...addItemForm, slot_id: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="เลือกช่อง" />
                 </SelectTrigger>
                 <SelectContent>
                   {slots.map((slot) => (
-                    <SelectItem key={slot.slot_id} value={slot.slot_id.toString()}>
+                    <SelectItem
+                      key={slot.slot_id}
+                      value={slot.slot_id.toString()}
+                    >
                       Slot {slot.slot_id} (Capacity: {slot.capacity})
                     </SelectItem>
                   ))}
@@ -2178,18 +2566,27 @@ export default function TransactionDetailTestPage() {
                 id="amount"
                 type="number"
                 value={addItemForm.amount}
-                onChange={(e) => setAddItemForm({ ...addItemForm, amount: e.target.value })}
+                onChange={(e) =>
+                  setAddItemForm({ ...addItemForm, amount: e.target.value })
+                }
                 placeholder="ใส่จำนวน"
               />
             </div>
-            {currentActivity === 'เติมยา' && (
+            {currentActivity === "เติมยา" && (
               <div>
-                <Label htmlFor="expired_at">วันหมดอายุ {currentActivity === 'เติมยา' && '*'}</Label>
+                <Label htmlFor="expired_at">
+                  วันหมดอายุ {currentActivity === "เติมยา" && "*"}
+                </Label>
                 <Input
                   id="expired_at"
                   type="date"
                   value={addItemForm.expired_at}
-                  onChange={(e) => setAddItemForm({ ...addItemForm, expired_at: e.target.value })}
+                  onChange={(e) =>
+                    setAddItemForm({
+                      ...addItemForm,
+                      expired_at: e.target.value,
+                    })
+                  }
                 />
               </div>
             )}
@@ -2204,7 +2601,13 @@ export default function TransactionDetailTestPage() {
             </Button>
             <Button
               onClick={handleAddItemToCart}
-              disabled={addItemLoading || !addItemForm.product_id || !addItemForm.lot_id || !addItemForm.slot_id || !addItemForm.amount}
+              disabled={
+                addItemLoading ||
+                !addItemForm.product_id ||
+                !addItemForm.lot_id ||
+                !addItemForm.slot_id ||
+                !addItemForm.amount
+              }
               className="bg-blue-600 hover:bg-blue-700"
             >
               {addItemLoading ? (
@@ -2213,7 +2616,7 @@ export default function TransactionDetailTestPage() {
                   <span>กำลังเพิ่ม...</span>
                 </div>
               ) : (
-                'เพิ่มรายการ'
+                "เพิ่มรายการ"
               )}
             </Button>
           </DialogFooter>
@@ -2221,12 +2624,16 @@ export default function TransactionDetailTestPage() {
       </Dialog>
 
       {/* CONFIRM DIALOG */}
-      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+      <AlertDialog
+        open={isConfirmDialogOpen}
+        onOpenChange={setIsConfirmDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>ยืนยันการทำรายการ</AlertDialogTitle>
             <AlertDialogDescription>
-              คุณต้องการยืนยัน Transaction ID: {currentTransactionId} ใช่หรือไม่?
+              คุณต้องการยืนยัน Transaction ID: {currentTransactionId}{" "}
+              ใช่หรือไม่?
               <br />
               <span className="text-blue-600 font-semibold">
                 มีรายการทั้งหมด {cartItems.length} รายการ
@@ -2251,7 +2658,7 @@ export default function TransactionDetailTestPage() {
                   <span>กำลังยืนยัน...</span>
                 </div>
               ) : (
-                'ยืนยัน'
+                "ยืนยัน"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -2259,7 +2666,10 @@ export default function TransactionDetailTestPage() {
       </AlertDialog>
 
       {/* CANCEL DIALOG */}
-      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+      <AlertDialog
+        open={isCancelDialogOpen}
+        onOpenChange={setIsCancelDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -2269,14 +2679,22 @@ export default function TransactionDetailTestPage() {
             <AlertDialogDescription asChild>
               <div>
                 <p className="mb-3">
-                  คุณต้องการยกเลิก Transaction ID: {currentTransactionId} ใช่หรือไม่?
+                  คุณต้องการยกเลิก Transaction ID: {currentTransactionId}{" "}
+                  ใช่หรือไม่?
                 </p>
                 {cartItems.length > 0 && (
                   <div className="bg-gray-50 rounded-md p-3 mb-3 max-h-40 overflow-y-auto">
-                    <p className="font-semibold text-sm mb-2 text-gray-700">รายการที่จะถูกยกเลิก:</p>
+                    <p className="font-semibold text-sm mb-2 text-gray-700">
+                      รายการที่จะถูกยกเลิก:
+                    </p>
                     {cartItems.map((item, index) => (
-                      <div key={item.slot_stock_id} className="text-sm text-gray-600 py-1">
-                        {index + 1}. Product: {item.product_id}, Lot: {item.lot_id}, Slot: {item.slot_id}, จำนวน: {item.amount_added || item.amount}
+                      <div
+                        key={item.slot_stock_id}
+                        className="text-sm text-gray-600 py-1"
+                      >
+                        {index + 1}. Product: {item.product_id}, Lot:{" "}
+                        {item.lot_id}, Slot: {item.slot_id}, จำนวน:{" "}
+                        {item.amount_added || item.amount}
                       </div>
                     ))}
                   </div>
@@ -2308,7 +2726,7 @@ export default function TransactionDetailTestPage() {
                   <span>กำลังยกเลิก...</span>
                 </div>
               ) : (
-                'ยืนยันการยกเลิก'
+                "ยืนยันการยกเลิก"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -2316,7 +2734,10 @@ export default function TransactionDetailTestPage() {
       </AlertDialog>
 
       {/* Transaction Detail Dialog */}
-      <Dialog open={isTransactionDetailDialogOpen} onOpenChange={setIsTransactionDetailDialogOpen}>
+      <Dialog
+        open={isTransactionDetailDialogOpen}
+        onOpenChange={setIsTransactionDetailDialogOpen}
+      >
         <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto ">
           <DialogHeader>
             <DialogTitle>รายละเอียดการทำรายการ</DialogTitle>
@@ -2335,23 +2756,28 @@ export default function TransactionDetailTestPage() {
                 <CardContent className="grid grid-cols-4 gap-2">
                   <div>
                     <p className="text-sm text-gray-500">Transaction ID</p>
-                    <p className="font-semibold">{selectedTransaction[0].Transaction.transaction_id}</p>
+                    <p className="font-semibold">
+                      {selectedTransaction[0].Transaction.transaction_id}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">ผู้ทำรายการ</p>
                     <p className="font-semibold">
-                      {selectedTransaction[0].Transaction.User.first_name} {selectedTransaction[0].Transaction.User.last_name}
+                      {selectedTransaction[0].Transaction.User.first_name}{" "}
+                      {selectedTransaction[0].Transaction.User.last_name}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">กิจกรรม</p>
                     <Badge
                       className={
-                        selectedTransaction[0].Transaction.activity === 'restock'
-                          ? 'bg-green-500 text-white hover:bg-green-600'
-                          : selectedTransaction[0].Transaction.activity === 'dispense'
-                            ? 'bg-orange-500 text-white hover:bg-orange-600'
-                            : ''
+                        selectedTransaction[0].Transaction.activity ===
+                        "restock"
+                          ? "bg-green-500 text-white hover:bg-green-600"
+                          : selectedTransaction[0].Transaction.activity ===
+                              "dispense"
+                            ? "bg-orange-500 text-white hover:bg-orange-600"
+                            : ""
                       }
                     >
                       {selectedTransaction[0].Transaction.activity}
@@ -2362,11 +2788,20 @@ export default function TransactionDetailTestPage() {
                     <p className="text-sm text-gray-500">สถานะ</p>
                     <Badge
                       variant={
-                        selectedTransaction[0].Transaction.status === 'สำเร็จ' ? 'default' :
-                          selectedTransaction[0].Transaction.status === 'กำลังดำเนินการ' ? 'secondary' :
-                            'destructive'
+                        selectedTransaction[0].Transaction.status === "สำเร็จ"
+                          ? "default"
+                          : selectedTransaction[0].Transaction.status ===
+                              "กำลังดำเนินการ"
+                            ? "secondary"
+                            : "destructive"
                       }
-                      className={selectedTransaction[0].Transaction.status === 'สำเร็จ' || selectedTransaction[0].Transaction.status === 'success' ? 'bg-green-500 hover:bg-green-600' : ''}
+                      className={
+                        selectedTransaction[0].Transaction.status ===
+                          "สำเร็จ" ||
+                        selectedTransaction[0].Transaction.status === "success"
+                          ? "bg-green-500 hover:bg-green-600"
+                          : ""
+                      }
                     >
                       {selectedTransaction[0].Transaction.status}
                     </Badge>
@@ -2374,19 +2809,23 @@ export default function TransactionDetailTestPage() {
                   <div>
                     <p className="text-sm text-gray-500">สถานที่</p>
                     <p className="font-semibold">
-                      {selectedTransaction[0].Transaction.User.Location?.location_name || 'N/A'}
+                      {selectedTransaction[0].Transaction.User.Location
+                        ?.location_name || "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">กลุ่มสถานที่</p>
                     <p className="font-semibold">
-                      {selectedTransaction[0].Transaction.User.Location?.Group_Location?.group_location_name || 'N/A'}
+                      {selectedTransaction[0].Transaction.User.Location
+                        ?.Group_Location?.group_location_name || "N/A"}
                     </p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-sm text-gray-500">วันที่ทำรายการ</p>
                     <p className="font-semibold">
-                      {new Date(selectedTransaction[0].created_at).toLocaleString('th-TH')}
+                      {new Date(
+                        selectedTransaction[0].created_at,
+                      ).toLocaleString("th-TH")}
                     </p>
                   </div>
                 </CardContent>
@@ -2410,14 +2849,21 @@ export default function TransactionDetailTestPage() {
                           <TableHead>Slot</TableHead>
                           <TableHead>ตำแหน่งตู้</TableHead>
                           <TableHead>สถานที่</TableHead>
-                          <TableHead className="text-right" >จำนวน</TableHead>
+                          <TableHead className="text-right">จำนวน</TableHead>
                           <TableHead className="text-right">Camera</TableHead>
                           <TableHead className="text-right">คงเหลือ</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {selectedTransaction.map((detail, index) => (
-                          <TableRow key={detail.transaction_detail_id} className={detail.is_discrepancy ? 'border-l-4 border-l-yellow-500' : ''}>
+                          <TableRow
+                            key={detail.transaction_detail_id}
+                            className={
+                              detail.is_discrepancy
+                                ? "border-l-4 border-l-yellow-500"
+                                : ""
+                            }
+                          >
                             <TableCell className="font-medium">
                               <div className="flex items-center gap-2">
                                 {index + 1}
@@ -2428,16 +2874,24 @@ export default function TransactionDetailTestPage() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <p className="font-semibold">{detail.Product.product_name}</p>
-                                <p className="text-xs text-gray-500">{detail.Product.product_id}</p>
+                                <p className="font-semibold">
+                                  {detail.Product.product_name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {detail.Product.product_id}
+                                </p>
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">{detail.Slot_stock.lot_id}</Badge>
+                              <Badge variant="outline">
+                                {detail.Slot_stock.lot_id}
+                              </Badge>
                             </TableCell>
                             <TableCell>
                               <div>
-                                <p className="font-medium">Slot #{detail.Slot.slot_id}</p>
+                                <p className="font-medium">
+                                  Slot #{detail.Slot.slot_id}
+                                </p>
                                 <p className="text-xs text-gray-500">
                                   Capacity: {detail.Slot.capacity}
                                 </p>
@@ -2445,7 +2899,9 @@ export default function TransactionDetailTestPage() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <p className="font-medium">Locker #{detail.Slot.Locker.locker_id}</p>
+                                <p className="font-medium">
+                                  Locker #{detail.Slot.Locker.locker_id}
+                                </p>
                                 <p className="text-xs text-gray-500">
                                   {detail.Slot.Locker.locker_location_detail}
                                 </p>
@@ -2453,15 +2909,25 @@ export default function TransactionDetailTestPage() {
                             </TableCell>
                             <TableCell>
                               <div>
-                                <p className="text-sm">{detail.Slot.Locker.Location.location_name}</p>
+                                <p className="text-sm">
+                                  {detail.Slot.Locker.Location.location_name}
+                                </p>
                                 <p className="text-xs text-gray-500">
-                                  {detail.Slot.Locker.Location.Group_Location.group_location_name}
+                                  {
+                                    detail.Slot.Locker.Location.Group_Location
+                                      .group_location_name
+                                  }
                                 </p>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right" >
+                            <TableCell className="text-right">
                               <Badge
-                                variant={selectedTransaction[0].Transaction.activity === 'เบิกยา' ? 'destructive' : 'default'}
+                                variant={
+                                  selectedTransaction[0].Transaction
+                                    .activity === "เบิกยา"
+                                    ? "destructive"
+                                    : "default"
+                                }
                                 className="font-semibold bg-blue-700"
                               >
                                 {detail.amount}
@@ -2469,7 +2935,7 @@ export default function TransactionDetailTestPage() {
                             </TableCell>
                             <TableCell className="text-right">
                               <span className="text-sm font-medium text-gray-600">
-                                {detail.camera_amount || '0'}
+                                {detail.camera_amount || "0"}
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
@@ -2498,7 +2964,11 @@ export default function TransactionDetailTestPage() {
                     <div>
                       <p className="text-sm text-gray-600">จำนวนรวม</p>
                       <p className="text-2xl font-bold text-blue-700">
-                        {selectedTransaction.reduce((sum, item) => sum + item.amount, 0)} ชิ้น
+                        {selectedTransaction.reduce(
+                          (sum, item) => sum + item.amount,
+                          0,
+                        )}{" "}
+                        ชิ้น
                       </p>
                     </div>
                     <div>
@@ -2523,8 +2993,8 @@ export default function TransactionDetailTestPage() {
             <Button
               variant="outline"
               onClick={() => {
-                setIsTransactionDetailDialogOpen(false)
-                setSelectedTransaction(null)
+                setIsTransactionDetailDialogOpen(false);
+                setSelectedTransaction(null);
               }}
             >
               ปิด
@@ -2558,8 +3028,8 @@ export default function TransactionDetailTestPage() {
                         ...reportForm,
                         group_location_id: value,
                         location_id: "",
-                        user_ids: [] // ✅ reset users
-                      })
+                        user_ids: [], // ✅ reset users
+                      });
                     }}
                   >
                     <SelectTrigger>
@@ -2567,7 +3037,10 @@ export default function TransactionDetailTestPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {groupLocations.map((group) => (
-                        <SelectItem key={group.group_location_id} value={group.group_location_id.toString()}>
+                        <SelectItem
+                          key={group.group_location_id}
+                          value={group.group_location_id.toString()}
+                        >
                           {group.group_location_name}
                         </SelectItem>
                       ))}
@@ -2578,20 +3051,31 @@ export default function TransactionDetailTestPage() {
                   <Label htmlFor="location_id">สถานที่</Label>
                   <Select
                     value={reportForm.location_id || "all"}
-                    onValueChange={(value) => setReportForm({
-                      ...reportForm,
-                      location_id: value === "all" ? "" : value,
-                      user_ids: [] // ✅ reset users
-                    })}
+                    onValueChange={(value) =>
+                      setReportForm({
+                        ...reportForm,
+                        location_id: value === "all" ? "" : value,
+                        user_ids: [], // ✅ reset users
+                      })
+                    }
                     disabled={!reportForm.group_location_id}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={reportForm.group_location_id ? "เลือกสถานที่ (หรือเว้นว่างเพื่อดูทั้งกลุ่ม)" : "เลือกกลุ่มสถานที่ก่อน"} />
+                      <SelectValue
+                        placeholder={
+                          reportForm.group_location_id
+                            ? "เลือกสถานที่ (หรือเว้นว่างเพื่อดูทั้งกลุ่ม)"
+                            : "เลือกกลุ่มสถานที่ก่อน"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">ทั้งหมดในกลุ่ม</SelectItem>
                       {getFilteredLocations().map((location) => (
-                        <SelectItem key={location.location_id} value={location.location_id.toString()}>
+                        <SelectItem
+                          key={location.location_id}
+                          value={location.location_id.toString()}
+                        >
                           {location.location_name}
                         </SelectItem>
                       ))}
@@ -2606,18 +3090,23 @@ export default function TransactionDetailTestPage() {
                 <Label htmlFor="location_id">สถานที่ *</Label>
                 <Select
                   value={reportForm.location_id}
-                  onValueChange={(value) => setReportForm({
-                    ...reportForm,
-                    location_id: value,
-                    user_ids: []
-                  })}
+                  onValueChange={(value) =>
+                    setReportForm({
+                      ...reportForm,
+                      location_id: value,
+                      user_ids: [],
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกสถานที่" />
                   </SelectTrigger>
                   <SelectContent>
                     {locations.map((location) => (
-                      <SelectItem key={location.location_id} value={location.location_id.toString()}>
+                      <SelectItem
+                        key={location.location_id}
+                        value={location.location_id.toString()}
+                      >
                         {location.location_name}
                       </SelectItem>
                     ))}
@@ -2630,9 +3119,9 @@ export default function TransactionDetailTestPage() {
               <div className="bg-gray-50 rounded-md p-3">
                 <Label className="text-gray-600">สถานที่</Label>
                 <p className="font-semibold text-gray-900">
-                  {currentUser?.locationName || `Location ID: ${currentUser?.locationId}`}
+                  {currentUser?.locationName ||
+                    `Location ID: ${currentUser?.locationId}`}
                 </p>
-
               </div>
             )}
 
@@ -2661,57 +3150,80 @@ export default function TransactionDetailTestPage() {
                     type="checkbox"
                     checked={
                       filteredUsersForReport.length > 0 &&
-                      filteredUsersForReport.every(u => reportForm.user_ids.includes(u.user_id))
+                      filteredUsersForReport.every((u) =>
+                        reportForm.user_ids.includes(u.user_id),
+                      )
                     }
                     onChange={() => {
-                      const allUserIds = filteredUsersForReport.map(u => u.user_id)
-                      setReportForm(prev => ({
+                      const allUserIds = filteredUsersForReport.map(
+                        (u) => u.user_id,
+                      );
+                      setReportForm((prev) => ({
                         ...prev,
-                        user_ids: prev.user_ids.length === allUserIds.length ? [] : allUserIds
-                      }))
+                        user_ids:
+                          prev.user_ids.length === allUserIds.length
+                            ? []
+                            : allUserIds,
+                      }));
                     }}
                     className="w-4 h-4 rounded border-gray-300"
                   />
                   <Label className="text-sm font-semibold cursor-pointer">
-                    เลือกทั้งหมด ({reportForm.user_ids.length}/{filteredUsersForReport.length})
+                    เลือกทั้งหมด ({reportForm.user_ids.length}/
+                    {filteredUsersForReport.length})
                   </Label>
                 </div>
 
                 {/* Users List */}
                 <div className="max-h-[200px] overflow-y-auto">
                   {filteredUsersForReport.length === 0 ? (
-                    <p className="text-center text-gray-500 text-sm py-4">กรุณาเลือกสถานที่ก่อน</p>
+                    <p className="text-center text-gray-500 text-sm py-4">
+                      กรุณาเลือกสถานที่ก่อน
+                    </p>
                   ) : (
                     filteredUsersForReport
-                      .filter(u =>
-                        !userSearchTerm ||
-                        `${u.first_name} ${u.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-                        u.user_id.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-                        u.Role?.role_name?.toLowerCase().includes(userSearchTerm.toLowerCase())
+                      .filter(
+                        (u) =>
+                          !userSearchTerm ||
+                          `${u.first_name} ${u.last_name}`
+                            .toLowerCase()
+                            .includes(userSearchTerm.toLowerCase()) ||
+                          u.user_id
+                            .toLowerCase()
+                            .includes(userSearchTerm.toLowerCase()) ||
+                          u.Role?.role_name
+                            ?.toLowerCase()
+                            .includes(userSearchTerm.toLowerCase()),
                       )
                       .map((user) => (
                         <div
                           key={user.user_id}
                           className="p-2 hover:bg-gray-50 flex items-center gap-2 cursor-pointer border-b last:border-b-0"
                           onClick={() => {
-                            setReportForm(prev => ({
+                            setReportForm((prev) => ({
                               ...prev,
                               user_ids: prev.user_ids.includes(user.user_id)
-                                ? prev.user_ids.filter(id => id !== user.user_id)
-                                : [...prev.user_ids, user.user_id]
-                            }))
+                                ? prev.user_ids.filter(
+                                    (id) => id !== user.user_id,
+                                  )
+                                : [...prev.user_ids, user.user_id],
+                            }));
                           }}
                         >
                           <input
                             type="checkbox"
                             checked={reportForm.user_ids.includes(user.user_id)}
-                            onChange={() => { }}
+                            onChange={() => {}}
                             className="w-4 h-4 rounded border-gray-300"
                             onClick={(e) => e.stopPropagation()}
                           />
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
-                            <p className="text-xs text-gray-500">{user.Role?.role_name || 'N/A'}</p>
+                            <p className="text-sm font-medium">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {user.Role?.role_name || "N/A"}
+                            </p>
                           </div>
                         </div>
                       ))
@@ -2750,56 +3262,79 @@ export default function TransactionDetailTestPage() {
                     type="checkbox"
                     checked={
                       products.length > 0 &&
-                      products.every(p => reportForm.product_ids.includes(p.product_id))
+                      products.every((p) =>
+                        reportForm.product_ids.includes(p.product_id),
+                      )
                     }
                     onChange={() => {
-                      const allProductIds = products.map(p => p.product_id)
-                      setReportForm(prev => ({
+                      const allProductIds = products.map((p) => p.product_id);
+                      setReportForm((prev) => ({
                         ...prev,
-                        product_ids: prev.product_ids.length === allProductIds.length ? [] : allProductIds
-                      }))
+                        product_ids:
+                          prev.product_ids.length === allProductIds.length
+                            ? []
+                            : allProductIds,
+                      }));
                     }}
                     className="w-4 h-4 rounded border-gray-300"
                   />
                   <Label className="text-sm font-semibold cursor-pointer">
-                    เลือกทั้งหมด ({reportForm.product_ids.length}/{products.length})
+                    เลือกทั้งหมด ({reportForm.product_ids.length}/
+                    {products.length})
                   </Label>
                 </div>
 
                 {/* Products List */}
                 <div className="max-h-[200px] overflow-y-auto">
                   {products.length === 0 ? (
-                    <p className="text-center text-gray-500 text-sm py-4">ไม่พบยา</p>
+                    <p className="text-center text-gray-500 text-sm py-4">
+                      ไม่พบยา
+                    </p>
                   ) : (
                     products
-                      .filter(p =>
-                        !productSearchTerm ||
-                        p.product_name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-                        p.product_id.toLowerCase().includes(productSearchTerm.toLowerCase())
+                      .filter(
+                        (p) =>
+                          !productSearchTerm ||
+                          p.product_name
+                            .toLowerCase()
+                            .includes(productSearchTerm.toLowerCase()) ||
+                          p.product_id
+                            .toLowerCase()
+                            .includes(productSearchTerm.toLowerCase()),
                       )
                       .map((product) => (
                         <div
                           key={product.product_id}
                           className="p-2 hover:bg-gray-50 flex items-center gap-2 cursor-pointer border-b last:border-b-0"
                           onClick={() => {
-                            setReportForm(prev => ({
+                            setReportForm((prev) => ({
                               ...prev,
-                              product_ids: prev.product_ids.includes(product.product_id)
-                                ? prev.product_ids.filter(id => id !== product.product_id)
-                                : [...prev.product_ids, product.product_id]
-                            }))
+                              product_ids: prev.product_ids.includes(
+                                product.product_id,
+                              )
+                                ? prev.product_ids.filter(
+                                    (id) => id !== product.product_id,
+                                  )
+                                : [...prev.product_ids, product.product_id],
+                            }));
                           }}
                         >
                           <input
                             type="checkbox"
-                            checked={reportForm.product_ids.includes(product.product_id)}
-                            onChange={() => { }}
+                            checked={reportForm.product_ids.includes(
+                              product.product_id,
+                            )}
+                            onChange={() => {}}
                             className="w-4 h-4 rounded border-gray-300"
                             onClick={(e) => e.stopPropagation()}
                           />
                           <div className="flex-1">
-                            <p className="text-sm font-medium">{product.product_name}</p>
-                            <p className="text-xs text-gray-500">{product.product_id}</p>
+                            <p className="text-sm font-medium">
+                              {product.product_name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {product.product_id}
+                            </p>
                           </div>
                         </div>
                       ))
@@ -2821,7 +3356,9 @@ export default function TransactionDetailTestPage() {
                   id="start_date"
                   type="date"
                   value={reportForm.start_date}
-                  onChange={(e) => setReportForm({ ...reportForm, start_date: e.target.value })}
+                  onChange={(e) =>
+                    setReportForm({ ...reportForm, start_date: e.target.value })
+                  }
                 />
               </div>
               <div>
@@ -2830,7 +3367,9 @@ export default function TransactionDetailTestPage() {
                   id="end_date"
                   type="date"
                   value={reportForm.end_date}
-                  onChange={(e) => setReportForm({ ...reportForm, end_date: e.target.value })}
+                  onChange={(e) =>
+                    setReportForm({ ...reportForm, end_date: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -2895,18 +3434,21 @@ export default function TransactionDetailTestPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">สถานที่</p>
-                      <p className="font-semibold text-gray-900">{reportData.location_name}</p>
+                      <p className="font-semibold text-gray-900">
+                        {reportData.location_name}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">กลุ่มสถานที่</p>
-                      <p className="font-semibold text-gray-900">{reportData.group_location_name}</p>
+                      <p className="font-semibold text-gray-900">
+                        {reportData.group_location_name}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">ช่วงเวลา</p>
                       {reportData.start_date && reportData.end_date
-                        ? `${new Date(reportData.start_date).toLocaleDateString('th-TH', { dateStyle: 'medium' })} - ${new Date(reportData.end_date).toLocaleDateString('th-TH', { dateStyle: 'medium' })}`
-                        : 'ทั้งหมด'
-                      }
+                        ? `${new Date(reportData.start_date).toLocaleDateString("th-TH", { dateStyle: "medium" })} - ${new Date(reportData.end_date).toLocaleDateString("th-TH", { dateStyle: "medium" })}`
+                        : "ทั้งหมด"}
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">ผู้ออกรีพอร์ต</p>
@@ -2917,7 +3459,8 @@ export default function TransactionDetailTestPage() {
                   </div>
 
                   {/* ✅ แสดง Active Filters */}
-                  {(reportData.filters?.user_names?.length > 0 || reportData.filters?.product_names?.length > 0) && (
+                  {(reportData.filters?.user_names?.length > 0 ||
+                    reportData.filters?.product_names?.length > 0) && (
                     <div className="mt-4 pt-4 border-t border-blue-200">
                       <p className="text-sm text-gray-600 mb-2">ผู้ทำรายการ:</p>
                       <div className="flex gap-2 flex-wrap">
@@ -2927,7 +3470,6 @@ export default function TransactionDetailTestPage() {
                             {name}
                           </Badge>
                         ))}
-
                       </div>
                       <br />
                       <p className="text-sm text-gray-600 mb-2">ยาที่เลือก:</p>
@@ -2938,7 +3480,6 @@ export default function TransactionDetailTestPage() {
                           </Badge>
                         ))}
                       </div>
-
                     </div>
                   )}
                 </CardContent>
@@ -2956,13 +3497,15 @@ export default function TransactionDetailTestPage() {
                         สรุปรวมตามยา
                       </CardTitle>
                       <p className="text-sm text-gray-500 mt-1">
-                        แสดงยอดรวมการเบิก-เติมของแต่ละยา ({reportData.summary_items?.length || 0} รายการ)
+                        แสดงยอดรวมการเบิก-เติมของแต่ละยา (
+                        {reportData.summary_items?.length || 0} รายการ)
                       </p>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  {reportData.summary_items && reportData.summary_items.length > 0 ? (
+                  {reportData.summary_items &&
+                  reportData.summary_items.length > 0 ? (
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
@@ -2970,41 +3513,60 @@ export default function TransactionDetailTestPage() {
                             <TableHead className="w-[60px]">ลำดับ</TableHead>
                             <TableHead>รหัสยา</TableHead>
                             <TableHead>ชื่อยา</TableHead>
-                            <TableHead className="text-right">จำนวนเติมยา</TableHead>
-                            <TableHead className="text-right">จำนวนเบิกยา</TableHead>
-                            <TableHead className="text-right">คงเหลือ</TableHead>
+                            <TableHead className="text-right">
+                              จำนวนเติมยา
+                            </TableHead>
+                            <TableHead className="text-right">
+                              จำนวนเบิกยา
+                            </TableHead>
+                            <TableHead className="text-right">
+                              คงเหลือ
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {reportData.summary_items.map((item: any, index: number) => (
-                            <TableRow key={item.product_id}>
-                              <TableCell className="font-medium">{index + 1}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{item.product_id}</Badge>
-                              </TableCell>
-                              <TableCell className="font-semibold">{item.product_name}</TableCell>
-                              <TableCell className="text-right">
-                                <Badge className="bg-green-500">
-                                  {item.total_restock}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Badge variant="destructive">
-                                  {item.total_withdraw}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Badge variant="outline" className="font-bold">
-                                  {item.current_stock}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {reportData.summary_items.map(
+                            (item: any, index: number) => (
+                              <TableRow key={item.product_id}>
+                                <TableCell className="font-medium">
+                                  {index + 1}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {item.product_id}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  {item.product_name}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Badge className="bg-green-500">
+                                    {item.total_restock}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Badge variant="destructive">
+                                    {item.total_withdraw}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Badge
+                                    variant="outline"
+                                    className="font-bold"
+                                  >
+                                    {item.current_stock}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ),
+                          )}
                         </TableBody>
                       </Table>
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-8">ไม่มีข้อมูลสรุปยา</p>
+                    <p className="text-center text-gray-500 py-8">
+                      ไม่มีข้อมูลสรุปยา
+                    </p>
                   )}
                 </CardContent>
               </Card>
@@ -3020,129 +3582,175 @@ export default function TransactionDetailTestPage() {
                         <FileText className="w-5 h-5" /> รายละเอียดการทำรายการ
                       </CardTitle>
                       <p className="text-sm text-gray-500 mt-1">
-                        แสดงรายละเอียดแต่ละครั้งของการทำรายการ ({reportData.detailed_transactions?.length || 0} รายการ)
+                        แสดงรายละเอียดแต่ละครั้งของการทำรายการ (
+                        {reportData.detailed_transactions?.length || 0} รายการ)
                       </p>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  {reportData.detailed_transactions && reportData.detailed_transactions.length > 0 ? (
+                  {reportData.detailed_transactions &&
+                  reportData.detailed_transactions.length > 0 ? (
                     <div className="space-y-4">
-                      {reportData.detailed_transactions.map((transaction: any, index: number) => (
-                        <Card
-                          key={transaction.transaction_id}
-                          className={`border-l-4 ${transaction.activity === 'เบิกยา'
-                            ? 'border-red-500 bg-red-50/30'
-                            : 'border-green-500 bg-green-50/30'
+                      {reportData.detailed_transactions.map(
+                        (transaction: any, index: number) => (
+                          <Card
+                            key={transaction.transaction_id}
+                            className={`border-l-4 ${
+                              transaction.activity === "เบิกยา"
+                                ? "border-red-500 bg-red-50/30"
+                                : "border-green-500 bg-green-50/30"
                             }`}
-                        >
-                          <CardHeader className="pb-3">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="font-mono">
-                                    #{index + 1}
-                                  </Badge>
-                                  <p className="font-semibold text-lg">
-                                    Transaction ID: {transaction.transaction_id}
+                          >
+                            <CardHeader className="pb-3">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <Badge
+                                      variant="outline"
+                                      className="font-mono"
+                                    >
+                                      #{index + 1}
+                                    </Badge>
+                                    <p className="font-semibold text-lg">
+                                      Transaction ID:{" "}
+                                      {transaction.transaction_id}
+                                    </p>
+                                  </div>
+                                  <p className="text-sm text-gray-600">
+                                    <UserRound className="w-4 h-4 mr-2 inline" />
+                                    {transaction.user_name}
+                                    <span className="text-xs text-gray-400 ml-2">
+                                      ({transaction.user_role})
+                                    </span>
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    <MapPin className="w-4 h-4 mr-2 inline text-red-500" />
+                                    {transaction.location_name} •{" "}
+                                    {transaction.group_location_name}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    <Clock3 className="w-4 h-4 mr-2 inline text-gray-600" />
+                                    {new Date(
+                                      transaction.created_at,
+                                    ).toLocaleString("th-TH")}
                                   </p>
                                 </div>
-                                <p className="text-sm text-gray-600">
-                                  <UserRound className="w-4 h-4 mr-2 inline" />
-                                  {transaction.user_name}
-                                  <span className="text-xs text-gray-400 ml-2">({transaction.user_role})</span>
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  <MapPin className="w-4 h-4 mr-2 inline text-red-500" />
-                                  {transaction.location_name} • {transaction.group_location_name}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                  <Clock3 className="w-4 h-4 mr-2 inline text-gray-600" />
-                                  {new Date(transaction.created_at).toLocaleString('th-TH')}
-                                </p>
+                                <div className="text-right space-y-2">
+                                  <Badge
+                                    variant={
+                                      transaction.activity === "เบิกยา"
+                                        ? "destructive"
+                                        : "default"
+                                    }
+                                    className={
+                                      transaction.activity === "เติมยา"
+                                        ? "bg-green-600"
+                                        : ""
+                                    }
+                                  >
+                                    {transaction.activity}
+                                  </Badge>
+                                  <p className="text-sm font-semibold">
+                                    รวม:{" "}
+                                    <span className="text-lg">
+                                      {transaction.total_amount}
+                                    </span>{" "}
+                                    ชิ้น
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {transaction.items.length} รายการ
+                                  </p>
+                                </div>
                               </div>
-                              <div className="text-right space-y-2">
-                                <Badge
-                                  variant={transaction.activity === 'เบิกยา' ? 'destructive' : 'default'}
-                                  className={transaction.activity === 'เติมยา' ? 'bg-green-600' : ''}
-                                >
-                                  {transaction.activity}
-                                </Badge>
-                                <p className="text-sm font-semibold">
-                                  รวม: <span className="text-lg">{transaction.total_amount}</span> ชิ้น
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  {transaction.items.length} รายการ
-                                </p>
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <Table>
-                              <TableHeader>
-                                <TableRow className="bg-white/50">
-                                  <TableHead className="w-[50px]">#</TableHead>
-                                  <TableHead>ยา</TableHead>
-                                  <TableHead>Lot ID</TableHead>
-                                  <TableHead>ตำแหน่ง</TableHead>
-                                  <TableHead className="text-right">จำนวน</TableHead>
-                                  <TableHead className="text-right">Camera</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {transaction.items.map((item: any, idx: number) => (
-                                  <TableRow key={idx} className={`bg-white ${item.is_discrepancy ? 'border-l-4 border-l-yellow-500' : ''}`}>
-                                    <TableCell className="text-gray-500">
-                                      <div className="flex items-center gap-2">
-                                        {idx + 1}
-                                        {item.is_discrepancy && (
-                                          <TriangleAlert className="w-4 h-4 text-yellow-500" />
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div>
-                                        <p className="font-semibold">{item.product_name}</p>
-                                        <p className="text-xs text-gray-500">{item.product_id}</p>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline">{item.lot_id}</Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="text-sm">
-                                        <p>Slot #{item.slot_id}</p>
-                                        <p className="text-xs text-gray-500">
-                                          Locker #{item.locker_id} • {item.locker_detail}
-                                        </p>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <Badge
-                                        className={
-                                          transaction.activity === 'เบิกยา'
-                                            ? 'bg-red-600'
-                                            : 'bg-green-600'
-                                        }
-                                      >
-                                        {item.amount}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <span className="text-sm font-medium text-gray-600">
-                                        {item.camera_amount || '0'}
-                                      </span>
-                                    </TableCell>
+                            </CardHeader>
+                            <CardContent>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="bg-white/50">
+                                    <TableHead className="w-[50px]">
+                                      #
+                                    </TableHead>
+                                    <TableHead>ยา</TableHead>
+                                    <TableHead>Lot ID</TableHead>
+                                    <TableHead>ตำแหน่ง</TableHead>
+                                    <TableHead className="text-right">
+                                      จำนวน
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                      Camera
+                                    </TableHead>
                                   </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </CardContent>
-                        </Card>
-                      ))}
+                                </TableHeader>
+                                <TableBody>
+                                  {transaction.items.map(
+                                    (item: any, idx: number) => (
+                                      <TableRow
+                                        key={idx}
+                                        className={`bg-white ${item.is_discrepancy ? "border-l-4 border-l-yellow-500" : ""}`}
+                                      >
+                                        <TableCell className="text-gray-500">
+                                          <div className="flex items-center gap-2">
+                                            {idx + 1}
+                                            {item.is_discrepancy && (
+                                              <TriangleAlert className="w-4 h-4 text-yellow-500" />
+                                            )}
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div>
+                                            <p className="font-semibold">
+                                              {item.product_name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                              {item.product_id}
+                                            </p>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell>
+                                          <Badge variant="outline">
+                                            {item.lot_id}
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="text-sm">
+                                            <p>Slot #{item.slot_id}</p>
+                                            <p className="text-xs text-gray-500">
+                                              Locker #{item.locker_id} •{" "}
+                                              {item.locker_detail}
+                                            </p>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          <Badge
+                                            className={
+                                              transaction.activity === "เบิกยา"
+                                                ? "bg-red-600"
+                                                : "bg-green-600"
+                                            }
+                                          >
+                                            {item.amount}
+                                          </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          <span className="text-sm font-medium text-gray-600">
+                                            {item.camera_amount || "0"}
+                                          </span>
+                                        </TableCell>
+                                      </TableRow>
+                                    ),
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </CardContent>
+                          </Card>
+                        ),
+                      )}
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-8">ไม่มีรายการทำรายการในช่วงเวลานี้</p>
+                    <p className="text-center text-gray-500 py-8">
+                      ไม่มีรายการทำรายการในช่วงเวลานี้
+                    </p>
                   )}
                 </CardContent>
               </Card>
@@ -3152,7 +3760,9 @@ export default function TransactionDetailTestPage() {
                 ======================================== */}
               <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
                 <CardHeader>
-                  <CardTitle className="text-lg text-blue-700">📈 สรุปภาพรวม</CardTitle>
+                  <CardTitle className="text-lg text-blue-700">
+                    📈 สรุปภาพรวม
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -3168,14 +3778,22 @@ export default function TransactionDetailTestPage() {
                       <p className="text-3xl font-bold text-green-600 mt-1">
                         {reportData.summary?.total_restock_all || 0}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">ชิ้น ({reportData.summary?.total_restock_transactions || 0} ครั้ง)</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        ชิ้น (
+                        {reportData.summary?.total_restock_transactions || 0}{" "}
+                        ครั้ง)
+                      </p>
                     </div>
                     <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                       <p className="text-sm text-gray-600">จำนวนเบิกยารวม</p>
                       <p className="text-3xl font-bold text-red-600 mt-1">
                         {reportData.summary?.total_withdraw_all || 0}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">ชิ้น ({reportData.summary?.total_withdraw_transactions || 0} ครั้ง)</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        ชิ้น (
+                        {reportData.summary?.total_withdraw_transactions || 0}{" "}
+                        ครั้ง)
+                      </p>
                     </div>
                     <div className="text-center p-4 bg-white rounded-lg shadow-sm">
                       <p className="text-sm text-gray-600">จำนวนคงเหลือรวม</p>
@@ -3187,8 +3805,13 @@ export default function TransactionDetailTestPage() {
                   </div>
                   <div className="mt-4 text-center">
                     <p className="text-sm text-gray-600">
-                      ทั้งหมด <span className="font-bold">{reportData.summary?.total_transactions || 0}</span> รายการทำรายการ
-                      {' '}({reportData.summary?.total_transaction_items || 0} รายการสินค้า)
+                      ทั้งหมด{" "}
+                      <span className="font-bold">
+                        {reportData.summary?.total_transactions || 0}
+                      </span>{" "}
+                      รายการทำรายการ (
+                      {reportData.summary?.total_transaction_items || 0}{" "}
+                      รายการสินค้า)
                     </p>
                   </div>
                 </CardContent>
@@ -3225,114 +3848,299 @@ export default function TransactionDetailTestPage() {
       </Dialog>
 
       {/* ✅ SNAPSHOT GALLERY DIALOG */}
-      <Dialog open={isSnapshotDialogOpen} onOpenChange={setIsSnapshotDialogOpen}>
-        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Camera className="w-5 h-5" />
-              รูปภาพการทำรายการ
+      <Dialog
+        open={isSnapshotDialogOpen}
+        onOpenChange={setIsSnapshotDialogOpen}
+      >
+        <DialogContent className="max-w-[85vw] lg:max-w-6xl bg-white p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Camera className="w-6 h-6 text-blue-600" />
+              ภาพถ่ายและ Log จากตู้ล็อกเกอร์
             </DialogTitle>
             <DialogDescription>
-              รูปภาพที่บันทึกระหว่างการทำรายการ
+              ตรวจสอบภาพถ่ายการทำรายการและไฟล์ระบบที่ถูกบันทึกไว้
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="p-6 pt-2 max-h-[70vh] overflow-y-auto bg-gray-50/50">
             {isLoadingSnapshots ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
-                <p className="text-gray-500 ml-3">กำลังโหลดรูปภาพ...</p>
+              <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                กำลังโหลดข้อมูล...
               </div>
             ) : selectedSnapshots.length === 0 ? (
-              <div className="text-center py-12">
-                <ImageIcon className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">ไม่มีรูปภาพสำหรับรายการนี้</p>
+              <div className="text-center py-12 text-gray-500">
+                ไม่มีข้อมูลภาพถ่ายสำหรับรายการนี้
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {selectedSnapshots.map((snapshot, index) => (
-                  <Card key={snapshot.snapshot_id} className="overflow-hidden hover:shadow-lg transition">
-                    <CardContent className="p-0">
-                      {/* รูปภาพ */}
-                      <div className="relative aspect-video bg-gray-100 group">
-                        <img
-                          src={snapshot.image_path}
-                          alt={`Snapshot ${index + 1}`}
-                          className="w-full h-full object-cover cursor-pointer group-hover:opacity-90 transition"
-                          onClick={() => window.open(snapshot.image_path, '_blank')}
-                          loading="lazy"
-                        />
-                        <Badge className="absolute top-2 right-2 bg-black/70">
-                          รูปที่ {index + 1}
-                        </Badge>
+              (() => {
+                // 🌟 1. จัดกลุ่มข้อมูลตาม Slot ID ไว้ก่อน
+                const slotGroups = selectedSnapshots.reduce(
+                  (acc, snapshot) => {
+                    const slotId =
+                      snapshot.Transaction_detail?.Slot?.slot_id || "Unknown";
+                    if (!acc[slotId]) acc[slotId] = [];
+                    acc[slotId].push(snapshot);
+                    return acc;
+                  },
+                  {} as Record<string, Snapshot[]>,
+                );
 
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <Eye className="w-8 h-8 text-white" />
-                        </div>
+                return (
+                  <div className="space-y-8">
+                    {/* 🌟 2. วนลูปแสดงแยกแต่ละตู้เรียงลงมาตรงๆ (เอา Accordion ออกแล้ว) */}
+                    {Object.entries(slotGroups).map(([slotId, snapshots]) => (
+                      <div key={slotId} className="bg-transparent">
+                        {/* ส่วนหัว: หัวข้อพร้อมแถบเส้นสีฟ้าด้านซ้ายตามแบบเดิม */}
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-800 border-l-4 border-blue-500 pl-3">
+                          ล็อกเกอร์ช่องที่ {slotId}
+                        </h3>
+
+                        {/* แท็บย่อยชั้นใน: สลับระหว่างภาพ AI กับ คลังไฟล์ดิบ */}
+                        <Tabs defaultValue="summary" className="w-full">
+                          <TabsList className="flex w-full max-w-md gap-1 bg-gray-100 border border-gray-200 p-1 rounded-md mb-4">
+                            <TabsTrigger
+                              value="summary"
+                              className="text-xs flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                            >
+                              📸 ภาพเปรียบเทียบ
+                            </TabsTrigger>
+                            <TabsTrigger
+                              value="logs"
+                              className="text-xs flex-1 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                            >
+                              📂 ไฟล์ Logs ในโฟลเดอร์
+                            </TabsTrigger>
+                          </TabsList>
+
+                          {/* =======================================================
+                              แท็บที่ 1: ภาพ Before/After สรุปการทำงาน (ป้าย Header สีๆ ไม่บังรูป)
+                              ======================================================= */}
+                          <TabsContent
+                            value="summary"
+                            className="mt-0 focus-visible:outline-none"
+                          >
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                              {snapshots.map((snapshot: Snapshot) => {
+                                const cloudName = "dkg7eq2kp";
+                                let dbPath = snapshot.image_path;
+                                const pathParts = dbPath.split("/");
+                                if (
+                                  pathParts.length >= 3 &&
+                                  !pathParts[2].startsWith("Txn_")
+                                ) {
+                                  pathParts[2] = `Txn_${pathParts[2]}`;
+                                }
+                                const realCloudinaryPath = pathParts.join("/");
+                                const baseUrl = `https://res.cloudinary.com/${cloudName}/image/upload/v1/${realCloudinaryPath}`;
+
+                                const parseDateTime = (
+                                  dateStr: string | undefined,
+                                ) => {
+                                  if (!dateStr) return new Date();
+                                  const isoStr = dateStr.endsWith("Z")
+                                    ? dateStr
+                                    : `${dateStr}Z`;
+                                  return new Date(isoStr);
+                                };
+                                const startTime = parseDateTime(
+                                  snapshot.Transaction_detail?.Transaction
+                                    ?.created_at,
+                                );
+                                const endTime = parseDateTime(
+                                  snapshot.created_at,
+                                );
+
+                                const images = [
+                                  {
+                                    type: "before",
+                                    label: "ก่อนเปิดตู้",
+                                    url: `${baseUrl}/1_before.jpg`,
+                                    color: "bg-orange-500",
+                                    displayTime: startTime,
+                                  },
+                                  {
+                                    type: "after",
+                                    label: "หลังปิดตู้",
+                                    url: `${baseUrl}/2_after.jpg`,
+                                    color: "bg-green-500",
+                                    displayTime: endTime,
+                                  },
+                                  {
+                                    type: "yolo_before",
+                                    label: "ระบบตรวจนับวัตถุ (ก่อน)",
+                                    url: `${baseUrl}/1_before_yolo.jpg`,
+                                    color: "bg-purple-500",
+                                    displayTime: startTime,
+                                  },
+                                  {
+                                    type: "yolo_after",
+                                    label: "ระบบตรวจนับวัตถุ (หลัง)",
+                                    url: `${baseUrl}/2_after_yolo.jpg`,
+                                    color: "bg-blue-500",
+                                    displayTime: endTime,
+                                  },
+                                ];
+
+                                return images.map((img) => (
+                                  <Card
+                                    key={`${snapshot.snapshot_id}-${img.type}`}
+                                    className="overflow-hidden hover:shadow-md transition border-gray-200 flex flex-col bg-white"
+                                  >
+                                    <div
+                                      className={`${img.color} px-2 py-1.5 text-center text-white text-[11px] font-semibold shadow-sm z-10`}
+                                    >
+                                      {img.label}
+                                    </div>
+                                    <CardContent className="p-0 flex-1 flex flex-col">
+                                      <div className="relative aspect-video bg-gray-900 flex items-center justify-center group overflow-hidden">
+                                        <img
+                                          src={img.url}
+                                          alt={`Slot ${slotId} ${img.type}`}
+                                          className="w-full h-full object-contain cursor-pointer opacity-90 group-hover:opacity-100 group-hover:scale-105 transition duration-300"
+                                          onClick={() =>
+                                            window.open(img.url, "_blank")
+                                          }
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).src =
+                                              "https://placehold.co/600x400/eeeeee/999999?text=No+Image";
+                                          }}
+                                        />
+                                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                                          <Eye className="w-8 h-8 text-white drop-shadow-md" />
+                                        </div>
+                                      </div>
+                                      <div className="p-2 bg-gray-50 flex justify-center items-center text-xs text-gray-500 border-t">
+                                        <span className="flex items-center gap-1 font-medium">
+                                          <Clock3 className="w-3 h-3 text-gray-400" />
+                                          {img.displayTime.toLocaleTimeString(
+                                            "th-TH",
+                                            {
+                                              hour: "2-digit",
+                                              minute: "2-digit",
+                                              second: "2-digit",
+                                            },
+                                          )}{" "}
+                                          น.
+                                        </span>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ));
+                              })}
+                            </div>
+                          </TabsContent>
+
+                          {/* =======================================================
+                              แท็บที่ 2: โชว์ไฟล์ Log ของจริงจาก Cloudinary แบบแกลเลอรี
+                              ======================================================= */}
+                          <TabsContent
+                            value="logs"
+                            className="mt-0 focus-visible:outline-none"
+                          >
+                            <div className="bg-white border rounded-lg p-4">
+                              <div className="flex items-center justify-between bg-gray-100 p-2 rounded mb-4">
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Folder className="w-4 h-4 text-yellow-500 fill-yellow-200" />
+                                  <span className="font-mono text-xs">
+                                    SmartLocker/1/Txn_
+                                    {snapshots[0]?.transaction_id}/Slot_S
+                                    {slotId}/
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] bg-white"
+                                >
+                                  Raw Logs
+                                </Badge>
+                              </div>
+
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {!cloudinaryLogs[slotId] ? (
+                                  <div className="col-span-full py-8 text-center text-gray-400 text-xs">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400 mx-auto mb-2"></div>
+                                    กำลังดึงข้อมูลไฟล์...
+                                  </div>
+                                ) : cloudinaryLogs[slotId].length === 0 ? (
+                                  <div className="col-span-full py-8 text-center text-gray-400 text-xs">
+                                    ไม่พบไฟล์ Log ในโฟลเดอร์นี้
+                                  </div>
+                                ) : (
+                                  cloudinaryLogs[slotId].map((filename, i) => {
+                                    const cloudName = "dkg7eq2kp";
+                                    let dbPath = snapshots[0]?.image_path;
+                                    const pathParts = dbPath.split("/");
+                                    if (
+                                      pathParts.length >= 3 &&
+                                      !pathParts[2].startsWith("Txn_")
+                                    ) {
+                                      pathParts[2] = `Txn_${pathParts[2]}`;
+                                    }
+                                    const realCloudinaryPath =
+                                      pathParts.join("/");
+                                    const folderUrl = `https://res.cloudinary.com/${cloudName}/image/upload/v1/${realCloudinaryPath}`;
+                                    const fileUrl = `${folderUrl}/${filename}`;
+
+                                    return (
+                                      <div
+                                        key={i}
+                                        className="flex flex-col border rounded-lg overflow-hidden hover:shadow-md transition bg-white group"
+                                      >
+                                        <div className="relative aspect-video bg-gray-900 flex items-center justify-center overflow-hidden">
+                                          <img
+                                            src={fileUrl}
+                                            alt={filename}
+                                            className="w-full h-full object-cover cursor-pointer group-hover:scale-110 transition duration-300 opacity-90 group-hover:opacity-100"
+                                            onClick={() =>
+                                              window.open(fileUrl, "_blank")
+                                            }
+                                            onError={(e) => {
+                                              (
+                                                e.target as HTMLImageElement
+                                              ).src =
+                                                "https://placehold.co/600x400/eeeeee/999999?text=Log+Image";
+                                            }}
+                                          />
+                                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none">
+                                            <Eye className="w-6 h-6 text-white drop-shadow-md" />
+                                          </div>
+                                        </div>
+                                        <div className="p-2 bg-gray-50 border-t flex flex-col items-center justify-center">
+                                          <span
+                                            className="text-[10px] text-gray-700 font-mono truncate w-full text-center"
+                                            title={filename}
+                                          >
+                                            {filename}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
                       </div>
-
-                      {/* ข้อมูล */}
-                      <div className="p-4 space-y-2 bg-white">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">สินค้า:</span>
-                          <span className="font-semibold">
-                            {snapshot.Transaction_detail?.Product?.product_name || 'N/A'}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Slot:</span>
-                          <Badge variant="outline">
-                            #{snapshot.Transaction_detail?.Slot?.slot_id || 'N/A'}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">กล้อง:</span>
-                          <span className="text-gray-500">
-                            Camera #{snapshot.camera_id}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">เวลา:</span>
-                          <span className="text-gray-500 text-xs">
-                            {new Date(snapshot.created_at).toLocaleString('th-TH')}
-                          </span>
-                        </div>
-
-                        {/* ปุ่มดาวน์โหลด */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full mt-2"
-                          onClick={() => {
-                            const link = document.createElement('a')
-                            link.href = snapshot.image_path
-                            link.download = `snapshot_${snapshot.snapshot_id}.jpg`
-                            link.click()
-                          }}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          ดาวน์โหลด
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    ))}
+                  </div>
+                );
+              })()
             )}
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="bg-white p-4 rounded-b-lg border-t mt-0">
             <Button
               variant="outline"
               onClick={() => setIsSnapshotDialogOpen(false)}
             >
-              ปิด
+              ปิดหน้าต่าง
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
-  )
+  );
 }
