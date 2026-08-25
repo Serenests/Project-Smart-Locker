@@ -748,12 +748,10 @@ module.exports = {
         });
       } catch (error) {
         console.error("Count user error:", error);
-        res
-          .status(500)
-          .json({
-            message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
-            error: error.message,
-          });
+        res.status(500).json({
+          message: "เกิดข้อผิดพลาดของเซิร์ฟเวอร์",
+          error: error.message,
+        });
       }
     },
   },
