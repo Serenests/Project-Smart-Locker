@@ -89,8 +89,7 @@ export default function DashboardLayout({ children }: {
                         </p>
                         
                       </div>
-                      
-                      <Bell className="h-5 w-5 text-gray-400" />
+                
                       
                       {/* ✅ ปุ่ม Logout */}
                       <Button 
